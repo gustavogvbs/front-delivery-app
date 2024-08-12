@@ -1,8 +1,23 @@
-import type { Metadata } from "next";
-import { Inter } from "next/font/google";
 import "./globals.css";
 
-const inter = Inter({ subsets: ["latin"] });
+import type { Metadata } from "next";
+import { Calistoga, Inter } from "next/font/google";
+
+import { cn } from "@lib/utils";
+
+import Providers from "./providers";
+
+const calistoga = Calistoga({
+  weight: ["400"],
+  subsets: ["latin"],
+  variable: "--font-title",
+});
+
+const inter = Inter({
+  weight: ["400", "500", "600", "700", "900"],
+  subsets: ["latin"],
+  variable: "--font-inter",
+});
 
 export const metadata: Metadata = {
   title: "Create Next App",
@@ -15,8 +30,10 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
-      <body className={inter.className}>{children}</body>
+    <html className={cn(inter.variable, calistoga.variable)} lang="en">
+      <body style={{ position: "unset !important" }}>
+        <Providers>{children}</Providers>
+      </body>
     </html>
   );
 }
