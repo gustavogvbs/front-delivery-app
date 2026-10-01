@@ -46,7 +46,3 @@ export interface ItemLineData {
   notes?: string | null;
   totalCents?: number;
 }
-
-/** "2x X-Burger" (sem preço: a cozinha usa a mesma linha). */
-export const itemLineText = (i: ItemLineData) =>
-  `${i.quantity}x ${i.productName}`;
