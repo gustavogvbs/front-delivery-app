@@ -29,6 +29,8 @@ const config = {
         background: "hsl(var(--background))",
         foreground: "hsl(var(--foreground))",
         primary: "#FB9400",
+        // cor da loja no cardápio público (CSS variable definida por BrandScope)
+        brand: "var(--brand, #FB9400)",
         secondary: {
           DEFAULT: "hsl(var(--secondary))",
           foreground: "hsl(var(--secondary-foreground))",
