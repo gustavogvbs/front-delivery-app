@@ -17,6 +17,7 @@ import {
 } from "@/lib/format";
 import { isApiError } from "@/lib/http";
 import { orderTypeLongLabel } from "@/lib/order-lines";
+import { autoPrint } from "@/lib/print";
 import { readText, remove, writeText } from "@/lib/storage";
 import { withWakeRetry } from "@/lib/wake";
 import { createManualOrder, previewManualOrder } from "@/services/panel-api";
@@ -283,6 +284,8 @@ function NewOrderForm({
       void qc.invalidateQueries({ queryKey: panelKeys.orders });
       qc.setQueryData(panelKeys.order(order.id), order);
       toast.success(`Pedido #${order.number} registrado.`);
+      // impressão automática ao registrar (só se ligada NESTE aparelho)
+      autoPrint(tenant, order.id, "manual");
       router.push(`/painel/pedidos/${order.id}`);
     } catch (err) {
       if (isApiError(err) && err.status === 422) {

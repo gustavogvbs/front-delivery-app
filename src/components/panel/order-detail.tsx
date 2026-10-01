@@ -16,6 +16,7 @@ import {
   STATUS_CLASS,
   STATUS_LABEL,
 } from "@/lib/panel-format";
+import { autoPrint, copiesFor, readAutoPrint } from "@/lib/print";
 import { runOrderAction } from "@/services/panel-api";
 import type { OrderAction, PanelOrder } from "@/types/panel";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
@@ -30,7 +31,8 @@ import {
 import { toast } from "sonner";
 
 import { EditOrderSheet } from "./edit-order-sheet";
-import { panelKeys, usePanelOrder } from "./use-panel";
+import { markPrinted, PrintButton } from "./print-button";
+import { panelKeys, usePanelOrder, usePanelTenant } from "./use-panel";
 
 const DONE_TOAST: Record<OrderAction, string> = {
   accept: "Pedido aceito.",
@@ -58,6 +60,7 @@ const CONFIRM: Partial<
 export function OrderDetail({ id }: { id: string }) {
   const qc = useQueryClient();
   const query = usePanelOrder(id);
+  const tenant = usePanelTenant();
   const order = query.data;
 
   const [confirm, setConfirm] = useState<OrderAction | null>(null);
@@ -79,6 +82,12 @@ export function OrderDetail({ id }: { id: string }) {
     onSuccess: (data, vars) => {
       applyOrder(data);
       toast.success(DONE_TOAST[vars.action]);
+      // impressão automática ao aceitar (só se ligada NESTE aparelho)
+      if (vars.action === "accept" && tenant.data) {
+        autoPrint(tenant.data, data.id, "accept");
+        if (readAutoPrint("accept") && copiesFor(tenant.data))
+          markPrinted(data.id);
+      }
       setConfirm(null);
       setReason("");
       setNotify(vars.action !== "complete" && Boolean(data.notifyCustomerUrl));
@@ -178,10 +187,13 @@ export function OrderDetail({ id }: { id: string }) {
           </span>
         )}
       </div>
-      <p className="text-sm text-zinc-500">
-        Recebido {dateTimeShort(order.createdAt)}
-        {order.editedAt ? ` · editado ${dateTimeShort(order.editedAt)}` : ""}
-      </p>
+      <div className="flex flex-wrap items-center justify-between gap-2">
+        <p className="text-sm text-zinc-500">
+          Recebido {dateTimeShort(order.createdAt)}
+          {order.editedAt ? ` · editado ${dateTimeShort(order.editedAt)}` : ""}
+        </p>
+        {tenant.data && <PrintButton orderId={order.id} tenant={tenant.data} />}
+      </div>
 
       {order.notifyCustomerUrl && notify && (
         <div className="rounded-2xl border-2 border-[#25D366] bg-white p-4">
