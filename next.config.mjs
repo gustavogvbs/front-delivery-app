@@ -2,6 +2,10 @@
 
 // API (Render). Usada pelo rewrite do painel; o navegador chama /api/* no
 // próprio domínio do front, e o cookie de sessão fica first-party.
+// Na Vercel, sem API_URL o painel apontaria para localhost: falha o build.
+if (process.env.VERCEL && !process.env.API_URL) {
+  throw new Error("API_URL é obrigatória na Vercel (URL do Render, sem / no fim).");
+}
 const apiUrl = (process.env.API_URL || "http://localhost:8080").replace(/\/+$/, "");
 
 const nextConfig = {

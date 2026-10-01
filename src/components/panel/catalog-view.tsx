@@ -356,9 +356,15 @@ function ProductForm({
       photo.mutate({ file });
       return;
     }
-    const blob = await prepareImage(file);
-    if (newImage) URL.revokeObjectURL(newImage.url);
-    setNewImage({ blob, url: URL.createObjectURL(blob) });
+    try {
+      const blob = await prepareImage(file);
+      if (newImage) URL.revokeObjectURL(newImage.url);
+      setNewImage({ blob, url: URL.createObjectURL(blob) });
+    } catch (err) {
+      setErrors({
+        image: isApiError(err) ? uploadErrorText(err) : "Erro inesperado.",
+      });
+    }
   };
 
   const submit = (e: React.FormEvent) => {
