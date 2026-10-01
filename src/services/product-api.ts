@@ -1,5 +1,3 @@
-import { type CookieValueTypes } from "cookies-next";
-
 import req from "@config/request-handle";
 
 import {
@@ -17,21 +15,21 @@ export const product = {
     return await req.get(`/product/${tenant}/${slug}?populate=category`);
   },
 
-  async GET_CART(cardCookies: CookieValueTypes, slug: string) {
+  async GET_CART(cardCookies: string | undefined, slug: string) {
     const cart: ICartItem[] = [];
     if (!cardCookies) return cart;
 
     let products: ProductResponseArr;
+    let cartJson: CardCookieType;
     try {
-      products = await req
-        .get(`/products/${slug}?populate=category`)
-        .catch((data) => data);
-      console.log(products);
+      products = await req.get(`/products/${slug}?populate=category`);
+      cartJson = JSON.parse(cardCookies);
     } catch (error) {
-      console.log(error);
+      // API indisponível ou cookie inválido: carrinho vazio em vez de quebrar a página
+      console.error(error);
+      return cart;
     }
-
-    const cartJson: CardCookieType = JSON.parse(cardCookies);
+    if (!Array.isArray(products?.data) || !Array.isArray(cartJson)) return cart;
 
     cartJson.forEach((item) => {
       products.data.forEach((product) => {

@@ -1,23 +1,5 @@
-import axios, { AxiosInstance } from "axios";
+// Compatibilidade: os serviços atuais do cardápio usam o cliente público.
+// Novos códigos devem importar publicApi/panelApi de "@/lib/http".
+import { publicApi } from "@/lib/http";
 
-import { env } from "./env";
-
-const req: AxiosInstance = axios.create({
-  withCredentials: true,
-  baseURL: env.NEXT_PUBLIC_API_URL,
-  headers: {
-    "Content-Type": "application/json",
-  },
-});
-
-req.interceptors.response.use(
-  (response) => {
-    return response.data;
-  },
-  ({ response }) => {
-    Promise.reject(response);
-    // return { status: response.data.status, message: response.data.message };
-  },
-);
-
-export default req;
+export default publicApi;
