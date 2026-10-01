@@ -1,17 +1,11 @@
-"use server";
-
 import { cookies } from "next/headers";
 
 import { TenantLayout } from "@/components/pages/home";
 import { CartPopup } from "@/components/pages/home/components/cart";
 import { api } from "@/lib/api";
 
-import { getCookie } from "cookies-next";
-
 interface Props {
-  params: {
-    tenant: string;
-  };
+  params: Promise<{ tenant: string }>;
 }
 
 async function GetTenantInitial(slug: string) {
@@ -25,17 +19,18 @@ async function GetTenantInitial(slug: string) {
 }
 
 export default async function Page({ params }: Props) {
+  const { tenant: slug } = await params;
   const { productApi } = api();
 
-  const tenant = await GetTenantInitial(params.tenant);
+  const tenant = await GetTenantInitial(slug);
 
-  const cartCookie = getCookie("cart", { cookies });
-  const cart = await productApi.GET_CART(cartCookie, params.tenant);
+  const cartCookie = (await cookies()).get("cart")?.value;
+  const cart = await productApi.GET_CART(cartCookie, slug);
 
   if (!tenant || !tenant?.data) return <div>Error</div>;
   return (
     <>
-      <TenantLayout initialData={tenant} slug={params.tenant} />
+      <TenantLayout initialData={tenant} slug={slug} />
       <CartPopup initialData={cart} />
     </>
   );
