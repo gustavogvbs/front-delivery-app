@@ -27,6 +27,21 @@ export interface LatLng {
   lng: number;
 }
 
+/** Estado calculado no back (modo manual, ajuste temporário ou horários). */
+export interface OpenStatus {
+  isOpen: boolean;
+  source: "MANUAL" | "HORARIO" | "AJUSTE";
+  /** próxima mudança (ISO) ou null */
+  changesAt: string | null;
+  nextChange: {
+    weekday: number;
+    time: string;
+    when: "HOJE" | "AMANHA" | "DIA_DA_SEMANA";
+  } | null;
+  /** "Aberto até 23:00", "Fechado · abre hoje às 18:00"… */
+  label: string;
+}
+
 export interface Menu {
   id: string;
   slug: string;
@@ -36,6 +51,7 @@ export interface Menu {
   logo: ImageView | null;
   initials: string;
   isOpen: boolean;
+  openStatus: OpenStatus;
   deliveryTime: { minMinutes: number; maxMinutes: number } | null;
   minOrderCents: number | null;
   acceptsPickup: boolean;
@@ -45,6 +61,8 @@ export interface Menu {
 }
 
 export interface DeliveryQuote {
+  storeOpen: boolean;
+  openLabel: string;
   acceptsDelivery: boolean;
   withinArea: boolean;
   distanceMeters: number | null;

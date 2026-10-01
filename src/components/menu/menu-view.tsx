@@ -43,6 +43,8 @@ export function MenuView({ slug }: { slug: string }) {
   const menuQuery = useQuery({
     queryKey: ["menu", slug],
     queryFn: () => withWakeRetry(() => getMenu(slug)),
+    // o estado aberto/fechado pode mudar sozinho (horário automático)
+    refetchInterval: 60_000,
     retry: false,
     staleTime: 30_000,
   });
@@ -121,7 +123,12 @@ export function MenuView({ slug }: { slug: string }) {
           >
             <Store className="size-5 shrink-0" />
             <div>
-              <p className="font-semibold">Fechado no momento</p>
+              <p className="font-semibold" data-testid="closed-label">
+                {/* manual: sem previsão; automático: "Fechado · abre hoje às 18:00" */}
+                {menu.openStatus.source === "MANUAL"
+                  ? "Fechado no momento"
+                  : menu.openStatus.label}
+              </p>
               <p className="text-sm">
                 Você pode ver o cardápio, mas os pedidos estão pausados.
               </p>
@@ -239,7 +246,7 @@ function StoreHeader({ menu }: { menu: Menu }) {
                 : "bg-red-100 text-red-800"
             }`}
           >
-            {menu.isOpen ? "Aberto" : "Fechado"}
+            {menu.openStatus.label}
           </span>
         </div>
       </div>

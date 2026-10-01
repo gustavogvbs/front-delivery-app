@@ -1,5 +1,11 @@
 // Contratos do painel da loja (ver docs-projeto/api.md). Dinheiro em centavos.
-import type { DeliveryType, LatLng, OrderStatus, PaymentMethod } from "./api";
+import type {
+  DeliveryType,
+  LatLng,
+  OpenStatus,
+  OrderStatus,
+  PaymentMethod,
+} from "./api";
 
 export interface Session {
   user: { id: string; name: string; email: string; role: string };
@@ -35,6 +41,29 @@ export interface PanelTenant {
   logo: { url: string; alt: string } | null;
   initials: string;
   deliveryFeeTiers: DeliveryFeeTier[];
+  openingMode: OpeningMode;
+  timeZone: string;
+  openingHours: OpeningInterval[];
+  openStatus: OpenStatus;
+  /** só no modo automático */
+  openNowOptions: {
+    /** aberto pelo horário (ignorando o ajuste): "Abrir agora" só tira o ajuste */
+    scheduleOpen: boolean;
+    /** "até o fechamento normal de hoje" (se houver e couber em 12 h) */
+    todayClose: string | null;
+    /** limite do "Abrir agora" (agora + 12 h) */
+    maxUntil: string;
+    /** até quando vale o "Fechar agora" (próxima abertura) */
+    closeUntil: string | null;
+  } | null;
+}
+
+export type OpeningMode = "MANUAL" | "AUTOMATICO";
+
+export interface OpeningInterval {
+  weekday: number; // 0 = domingo … 6 = sábado
+  opensAt: number; // minutos desde 00:00
+  closesAt: number; // 1–1440; <= opensAt = termina no dia seguinte
 }
 
 export interface DeliveryFeeTier {

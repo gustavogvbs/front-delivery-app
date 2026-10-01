@@ -21,7 +21,8 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { ExternalLink, Eye, EyeOff, ImageUp, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 
-import { panelKeys, usePanelTenant, useSetStoreOpen } from "./use-panel";
+import { OpenControl } from "./open-control";
+import { panelKeys, usePanelTenant } from "./use-panel";
 
 /** Tela "Loja": aberto/fechado, logo, dados e senha. */
 export function SettingsView() {
@@ -100,39 +101,11 @@ export const inputClass =
   "h-12 w-full rounded-xl border border-zinc-300 bg-white px-3 text-base outline-none focus:border-zinc-900";
 
 function OpenCard({ tenant }: { tenant: PanelTenant }) {
-  const setOpen = useSetStoreOpen();
   return (
-    <section
-      className={`rounded-2xl border-2 p-4 ${
-        tenant.isOpen
-          ? "border-emerald-500 bg-emerald-50"
-          : "border-red-400 bg-red-50"
-      }`}
-    >
-      <p
-        className={`text-lg font-bold ${tenant.isOpen ? "text-emerald-900" : "text-red-900"}`}
-        data-testid="store-open-state"
-      >
-        {tenant.isOpen ? "Loja aberta" : "Loja fechada"}
-      </p>
-      <p className="text-sm text-zinc-700">
-        {tenant.isOpen
-          ? "Os clientes podem fazer pedidos agora."
-          : "O cardápio continua visível, mas ninguém consegue pedir."}
-      </p>
-      <button
-        type="button"
-        onClick={() => setOpen.mutate(!tenant.isOpen)}
-        disabled={setOpen.isPending}
-        className={`mt-3 flex h-12 w-full items-center justify-center gap-2 rounded-xl font-semibold text-white disabled:opacity-60 ${
-          tenant.isOpen ? "bg-red-600" : "bg-emerald-600"
-        }`}
-      >
-        {setOpen.isPending && <Loader2 className="size-5 animate-spin" />}
-        {tenant.isOpen ? "Fechar a loja" : "Abrir a loja"}
-      </button>
+    <div className="space-y-2">
+      <OpenControl tenant={tenant} variant="card" />
       {!tenant.approved && (
-        <p className="mt-2 text-sm text-amber-800">
+        <p className="text-sm text-amber-800">
           Sua loja ainda não foi aprovada: o cardápio não aparece para os
           clientes.
         </p>
@@ -141,11 +114,11 @@ function OpenCard({ tenant }: { tenant: PanelTenant }) {
         href={`/${tenant.slug}`}
         target="_blank"
         rel="noopener noreferrer"
-        className="mt-2 inline-flex h-11 items-center gap-1 text-sm font-medium text-zinc-700 underline"
+        className="inline-flex h-11 items-center gap-1 text-sm font-medium text-zinc-700 underline"
       >
         Ver meu cardápio <ExternalLink className="size-4" />
       </a>
-    </section>
+    </div>
   );
 }
 

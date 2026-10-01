@@ -15,7 +15,8 @@ import { useQueryClient } from "@tanstack/react-query";
 import { Bell, BellOff, Loader2, LogOut } from "lucide-react";
 import { toast } from "sonner";
 
-import { useActiveOrders, usePanelTenant, useSetStoreOpen } from "./use-panel";
+import { OpenControl } from "./open-control";
+import { useActiveOrders, usePanelTenant } from "./use-panel";
 
 const SECTIONS = [
   {
@@ -32,6 +33,11 @@ const SECTIONS = [
     href: "/painel/entrega",
     label: "Entrega",
     match: (p: string) => p.startsWith("/painel/entrega"),
+  },
+  {
+    href: "/painel/horarios",
+    label: "Horários",
+    match: (p: string) => p.startsWith("/painel/horarios"),
   },
   {
     href: "/painel/loja",
@@ -52,7 +58,6 @@ export function PanelShell({ children }: { children: React.ReactNode }) {
   const tenant = usePanelTenant();
   const active = useActiveOrders();
   const sound = useOrderSound();
-  const setOpen = useSetStoreOpen();
   const [leaving, setLeaving] = useState(false);
 
   const storeName = tenant.data?.name ?? "Painel";
@@ -166,7 +171,7 @@ export function PanelShell({ children }: { children: React.ReactNode }) {
         )}
         <nav
           aria-label="Seções do painel"
-          className="mx-auto grid max-w-3xl grid-cols-4 border-t px-2"
+          className="mx-auto grid max-w-3xl grid-cols-5 border-t px-1"
         >
           {SECTIONS.map((s) => {
             const current = s.match(pathname);
@@ -175,7 +180,7 @@ export function PanelShell({ children }: { children: React.ReactNode }) {
                 key={s.href}
                 href={s.href}
                 aria-current={current ? "page" : undefined}
-                className={`relative flex h-11 items-center justify-center gap-1 text-sm font-medium ${
+                className={`relative flex h-11 items-center justify-center gap-1 text-[13px] font-medium sm:text-sm ${
                   current
                     ? "text-zinc-900 after:absolute after:inset-x-2 after:bottom-0 after:h-0.5 after:rounded-full after:bg-zinc-900"
                     : "text-zinc-500"
@@ -192,20 +197,7 @@ export function PanelShell({ children }: { children: React.ReactNode }) {
           })}
         </nav>
         {tenant.data && !tenant.data.isOpen && (
-          <div className="flex items-center justify-between gap-3 bg-red-50 px-4 py-2 text-sm text-red-800">
-            <span>
-              Loja <strong>fechada</strong>: os clientes não conseguem pedir.
-            </span>
-            <button
-              type="button"
-              onClick={() => setOpen.mutate(true)}
-              disabled={setOpen.isPending}
-              className="flex h-10 shrink-0 items-center gap-1 rounded-lg bg-red-600 px-3 font-semibold text-white disabled:opacity-60"
-            >
-              {setOpen.isPending && <Loader2 className="size-4 animate-spin" />}
-              Abrir agora
-            </button>
-          </div>
+          <OpenControl tenant={tenant.data} variant="banner" />
         )}
       </header>
       {children}

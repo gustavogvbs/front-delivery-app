@@ -86,6 +86,8 @@ export function CheckoutView({ slug }: { slug: string }) {
   const menuQuery = useQuery({
     queryKey: ["menu", slug],
     queryFn: () => withWakeRetry(() => getMenu(slug)),
+    // o estado aberto/fechado pode mudar sozinho (horário automático)
+    refetchInterval: 60_000,
     retry: false,
     staleTime: 30_000,
   });
@@ -312,7 +314,8 @@ function CheckoutForm({
   const belowMin = menu.minOrderCents !== null && subtotal < menu.minOrderCents;
 
   let blockReason: string | null = null;
-  if (!menu.isOpen) blockReason = "A loja está fechada no momento.";
+  if (!menu.isOpen)
+    blockReason = `Loja fechada · ${menu.openStatus.label.replace(/^Fechado · /, "")}`;
   else if (blockedLines.length)
     blockReason =
       "Há itens indisponíveis no carrinho. Volte ao cardápio para removê-los.";
@@ -326,6 +329,7 @@ function CheckoutForm({
     blockReason = `Este endereço está fora da área de entrega${menu.acceptsPickup ? ". Você pode escolher retirada." : "."}`;
 
   // ── envio ──
+  const queryClient = useQueryClient();
   const [submitting, setSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<SubmitError | null>(null);
   const errorRef = useRef<HTMLDivElement>(null);
@@ -359,6 +363,19 @@ function CheckoutForm({
     } catch (e) {
       setSubmitting(false);
       const msg = isApiError(e) ? e.message : "Erro inesperado.";
+      if (
+        isApiError(e) &&
+        e.status === 409 &&
+        msg.startsWith("A loja está fechada")
+      ) {
+        // fechou no meio do checkout: fica aqui, com o carrinho, e atualiza o aviso
+        setSubmitError({
+          kind: "message",
+          message: `${msg} Seu carrinho continua salvo.`,
+        });
+        void queryClient.invalidateQueries({ queryKey: ["menu", slug] });
+        return;
+      }
       if (isApiError(e) && e.status === 409) {
         await onConflict(msg);
         return;
