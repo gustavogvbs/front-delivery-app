@@ -41,7 +41,8 @@ export function CartSheet({
   const belowMin = menu.minOrderCents !== null && subtotal < menu.minOrderCents;
 
   let reason: string | null = null;
-  if (!menu.isOpen) reason = "A loja está fechada no momento.";
+  if (!menu.isOpen)
+    reason = `Loja fechada · ${menu.openStatus.label.replace(/^Fechado · /, "")}`;
   else if (blocked.length)
     reason = "Remova os itens indisponíveis para continuar.";
   else if (belowMin)
