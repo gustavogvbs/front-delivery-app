@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useState } from "react";
 
 import { formatBRL } from "@/lib/format";
+import { orderTypeLabel } from "@/lib/order-lines";
 import {
   ago,
   dateTimeShort,
@@ -12,9 +13,9 @@ import {
   STATUS_LABEL,
   timeHM,
 } from "@/lib/panel-format";
-import type { PanelOrderSummary } from "@/types/panel";
+import type { OrderType, PanelOrderSummary } from "@/types/panel";
 import { useIsFetching } from "@tanstack/react-query";
-import { ChevronRight, Loader2, RefreshCw } from "lucide-react";
+import { ChevronRight, Loader2, Plus, RefreshCw } from "lucide-react";
 
 import {
   panelKeys,
@@ -25,18 +26,39 @@ import {
 
 type Tab = "andamento" | "finalizados";
 
+const TYPE_FILTERS: { key: OrderType | "TODOS"; label: string }[] = [
+  { key: "TODOS", label: "Todos" },
+  { key: "ENTREGA", label: "Entrega" },
+  { key: "RETIRADA", label: "Retirada" },
+  { key: "BALCAO", label: "Balcão" },
+  { key: "CONSUMO_LOCAL", label: "Local" },
+];
+
 export function OrdersBoard() {
   const [tab, setTab] = useState<Tab>("andamento");
+  const [typeFilter, setTypeFilter] = useState<OrderType | "TODOS">("TODOS");
+  const byType = (list: PanelOrderSummary[]) =>
+    typeFilter === "TODOS"
+      ? list
+      : list.filter((o) => o.deliveryType === typeFilter);
   const active = useActiveOrders();
   const finished = useFinishedOrders(tab === "finalizados");
   const fetching = useIsFetching({ queryKey: panelKeys.orders }) > 0;
 
-  const pending = active.data?.pending ?? [];
-  const accepted = active.data?.accepted ?? [];
+  const pending = byType(active.data?.pending ?? []);
+  const accepted = byType(active.data?.accepted ?? []);
+  const finishedList = byType(finished.data ?? []);
   const current = tab === "andamento" ? active : finished;
 
   return (
     <main className="mx-auto max-w-3xl px-4 pb-16 pt-4">
+      <Link
+        href="/painel/pedidos/novo"
+        className="mb-3 flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-zinc-900 font-semibold text-white"
+      >
+        <Plus className="size-5" />
+        Novo pedido (balcão, mesa, telefone)
+      </Link>
       <div
         role="tablist"
         className="grid grid-cols-2 gap-1 rounded-xl bg-zinc-200/70 p-1"
@@ -57,6 +79,28 @@ export function OrdersBoard() {
             }`}
           >
             {label}
+          </button>
+        ))}
+      </div>
+
+      <div
+        className="-mx-4 mt-3 flex gap-2 overflow-x-auto px-4 pb-1"
+        role="group"
+        aria-label="Filtrar por tipo"
+      >
+        {TYPE_FILTERS.map((f) => (
+          <button
+            key={f.key}
+            type="button"
+            aria-pressed={typeFilter === f.key}
+            onClick={() => setTypeFilter(f.key)}
+            className={`h-10 shrink-0 rounded-full border px-4 text-sm font-medium ${
+              typeFilter === f.key
+                ? "border-zinc-900 bg-zinc-900 text-white"
+                : "border-zinc-300 bg-white text-zinc-700"
+            }`}
+          >
+            {f.label}
           </button>
         ))}
       </div>
@@ -119,11 +163,11 @@ export function OrdersBoard() {
             )}
           </>
         )
-      ) : (finished.data ?? []).length === 0 ? (
+      ) : finishedList.length === 0 ? (
         <Empty text="Nenhum pedido finalizado ainda." />
       ) : (
         <Section title="Últimos 50">
-          {(finished.data ?? []).map((o) => (
+          {finishedList.map((o) => (
             <OrderCard key={o.id} order={o} />
           ))}
         </Section>
@@ -194,11 +238,23 @@ function OrderCard({
               {dateTimeShort(order.createdAt)} · {ago(order.createdAt)}
             </span>
           </div>
-          <p className="mt-1 truncate font-medium text-zinc-800">
-            {order.customerName}
+          <p className="mt-1 flex flex-wrap items-center gap-1.5">
+            <span
+              className="rounded-md bg-zinc-900 px-1.5 py-0.5 text-xs font-semibold text-white"
+              data-testid="order-type-badge"
+            >
+              {orderTypeLabel(order)}
+            </span>
+            {order.source === "MANUAL" && (
+              <span className="rounded-md border border-zinc-300 px-1.5 py-0.5 text-xs text-zinc-600">
+                Manual
+              </span>
+            )}
+            <span className="truncate font-medium text-zinc-800">
+              {order.customerName ?? ""}
+            </span>
           </p>
           <p className="text-sm text-zinc-600">
-            {order.deliveryType === "ENTREGA" ? "Entrega" : "Retirada"} ·{" "}
             {PAYMENT_LABEL[order.paymentMethod]} · {order.itemsCount}{" "}
             {order.itemsCount === 1 ? "item" : "itens"}
           </p>

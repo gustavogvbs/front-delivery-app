@@ -61,7 +61,10 @@ export function PanelShell({ children }: { children: React.ReactNode }) {
   const [leaving, setLeaving] = useState(false);
 
   const storeName = tenant.data?.name ?? "Painel";
-  const pendingCount = active.data?.pending.length ?? 0;
+  const pendingOnline = active.data?.pending.filter(
+    (o) => o.source === "ONLINE",
+  );
+  const pendingCount = pendingOnline?.length ?? 0;
 
   // Título da aba: "(2) Pedidos — Loja". Reaplicado a cada atualização e
   // navegação (o Next troca o <title> ao mudar de página).
@@ -72,7 +75,7 @@ export function PanelShell({ children }: { children: React.ReactNode }) {
         : `Pedidos — ${storeName}`;
   }, [pendingCount, storeName, pathname, active.dataUpdatedAt]);
 
-  useNewPendingOrders(active.data?.pending, (fresh) => {
+  useNewPendingOrders(pendingOnline, (fresh) => {
     sound.play();
     const numbers = fresh.map((o) => `#${o.number}`).join(", ");
     toast.info(
