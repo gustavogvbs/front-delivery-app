@@ -12,6 +12,6 @@ export interface ResponseDataArray<T> {
 }
 
 export interface ResponseTimestamps {
-  created_at: string;
-  updated_at: string;
+  createdAt: string;
+  updatedAt: string;
 }
