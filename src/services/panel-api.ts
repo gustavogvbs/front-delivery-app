@@ -2,6 +2,8 @@ import { panelApi } from "@/lib/http";
 import type {
   DeliveryFeeTier,
   EditOrderBody,
+  OpeningInterval,
+  OpeningMode,
   OrderAction,
   PanelCategory,
   PanelOrder,
@@ -223,5 +225,39 @@ export async function removeProductImage(id: string): Promise<PanelProduct> {
   const res = (await panelApi.delete(
     `/tenant/me/products/${encodeURIComponent(id)}/image`,
   )) as Envelope<PanelProduct>;
+  return res.data;
+}
+
+// ── horário de funcionamento ──
+
+export async function putOpeningHours(body: {
+  mode: OpeningMode;
+  timeZone: string;
+  hours: OpeningInterval[];
+}): Promise<{ tenant: PanelTenant; overrideCleared: boolean }> {
+  const res = (await panelApi.put("/tenant/me/opening-hours", body)) as {
+    data: PanelTenant;
+    meta: { overrideCleared: boolean };
+  };
+  return { tenant: res.data, overrideCleared: res.meta.overrideCleared };
+}
+
+/** Abrir/fechar: manual grava; automático cria um ajuste temporário. */
+export async function setOpenState(
+  open: boolean,
+  until?: string,
+): Promise<PanelTenant> {
+  const res = (await panelApi.post("/tenant/me/open-state", {
+    open,
+    ...(until ? { until } : {}),
+  })) as Envelope<PanelTenant>;
+  return res.data;
+}
+
+/** "Voltar ao automático". */
+export async function clearOpenState(): Promise<PanelTenant> {
+  const res = (await panelApi.delete(
+    "/tenant/me/open-state",
+  )) as Envelope<PanelTenant>;
   return res.data;
 }

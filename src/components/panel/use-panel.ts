@@ -6,8 +6,9 @@ import {
   getPanelOrder,
   getPanelTenant,
   listOrders,
+  clearOpenState,
   listPanelCategories,
-  updateSettings,
+  setOpenState,
 } from "@/services/panel-api";
 import type { PanelOrderSummary } from "@/types/panel";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
@@ -30,6 +31,9 @@ export function usePanelTenant() {
     queryKey: panelKeys.tenant,
     queryFn: () => withWakeRetry(getPanelTenant),
     staleTime: 60_000,
+    // o estado aberto/fechado muda sozinho no modo automático
+    refetchInterval: 60_000,
+    refetchIntervalInBackground: false,
     retry: false,
   });
 }
@@ -86,7 +90,8 @@ export function usePanelOrder(id: string) {
 export function useSetStoreOpen() {
   const qc = useQueryClient();
   return useMutation({
-    mutationFn: (isOpen: boolean) => updateSettings({ isOpen }),
+    mutationFn: (vars: { open: boolean; until?: string }) =>
+      setOpenState(vars.open, vars.until),
     onSuccess: (data) => {
       qc.setQueryData(panelKeys.tenant, data);
       toast.success(
@@ -94,6 +99,24 @@ export function useSetStoreOpen() {
           ? "Loja aberta: os clientes já podem pedir."
           : "Loja fechada: o cardápio continua visível, mas sem pedidos.",
       );
+    },
+    onError: (err) =>
+      toast.error(
+        isApiError(err) && err.status !== 0
+          ? err.message
+          : "Sem conexão com o servidor. Tente de novo.",
+      ),
+  });
+}
+
+/** "Voltar ao automático" (tira o ajuste temporário). */
+export function useClearOpenOverride() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: clearOpenState,
+    onSuccess: (data) => {
+      qc.setQueryData(panelKeys.tenant, data);
+      toast.success("A loja voltou a seguir os horários.");
     },
     onError: (err) =>
       toast.error(
