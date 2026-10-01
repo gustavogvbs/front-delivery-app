@@ -10,7 +10,29 @@ const SKIP_BELOW_BYTES = 1_000_000;
 
 export const ACCEPTED_IMAGES = "image/jpeg,image/png,image/webp";
 
+/**
+ * Teto do que sai do aparelho. O painel envia pelo rewrite /api/* da Vercel
+ * (limite de corpo a confirmar no dia 7; funções da Vercel aceitam 4,5 MB) e
+ * o back aceita até 5 MB. Acima disso, mensagem clara antes de enviar.
+ */
+export const MAX_UPLOAD_BYTES = 4_000_000;
+
+export class ImageTooLargeError extends Error {
+  status = 413;
+  constructor() {
+    super(
+      "A foto continua grande demais mesmo depois de reduzida (máx. 4 MB). Tente outra foto ou um print da tela.",
+    );
+  }
+}
+
 export async function prepareImage(file: File): Promise<Blob> {
+  const blob = await shrink(file);
+  if (blob.size > MAX_UPLOAD_BYTES) throw new ImageTooLargeError();
+  return blob;
+}
+
+async function shrink(file: File): Promise<Blob> {
   if (typeof createImageBitmap !== "function") return file;
   try {
     const bitmap = await createImageBitmap(file, {
