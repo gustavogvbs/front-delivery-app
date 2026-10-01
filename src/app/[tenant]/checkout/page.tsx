@@ -1,35 +1,17 @@
-import { cookies } from "next/headers";
+import type { Metadata } from "next";
 
-import CheckoutLayout from "@/components/pages/checkout";
-import { api } from "@/lib/api";
+import { CheckoutView } from "@/components/checkout/checkout-view";
 
 interface Props {
   params: Promise<{ tenant: string }>;
 }
 
-async function GetTenantInitial(slug: string) {
-  const { tenantApi } = api();
+export const metadata: Metadata = {
+  title: "Finalizar pedido",
+  robots: { index: false },
+};
 
-  try {
-    return await tenantApi.GET(slug);
-  } catch (error) {
-    console.log(error);
-  }
-}
-
-export default async function Page({ params }: Props) {
-  const { tenant: slug } = await params;
-  const { productApi } = api();
-
-  const tenant = await GetTenantInitial(slug);
-
-  const cartCookie = (await cookies()).get("cart")?.value;
-  const cart = await productApi.GET_CART(cartCookie, slug);
-
-  if (!tenant || !tenant?.data) return <div>Error</div>;
-  return (
-    <>
-      <CheckoutLayout data={cart} />
-    </>
-  );
+export default async function CheckoutPage({ params }: Props) {
+  const { tenant } = await params;
+  return <CheckoutView slug={tenant} />;
 }

@@ -1,37 +1,17 @@
-import { cookies } from "next/headers";
+import { Suspense } from "react";
 
-import { TenantLayout } from "@/components/pages/home";
-import { CartPopup } from "@/components/pages/home/components/cart";
-import { api } from "@/lib/api";
+import { MenuView } from "@/components/menu/menu-view";
 
 interface Props {
   params: Promise<{ tenant: string }>;
 }
 
-async function GetTenantInitial(slug: string) {
-  const { tenantApi } = api();
-
-  try {
-    return await tenantApi.GET(slug);
-  } catch (error) {
-    console.log(error);
-  }
-}
-
-export default async function Page({ params }: Props) {
-  const { tenant: slug } = await params;
-  const { productApi } = api();
-
-  const tenant = await GetTenantInitial(slug);
-
-  const cartCookie = (await cookies()).get("cart")?.value;
-  const cart = await productApi.GET_CART(cartCookie, slug);
-
-  if (!tenant || !tenant?.data) return <div>Error</div>;
+// Os dados vêm no navegador (com "Conectando ao servidor…" no cold start da API).
+export default async function TenantPage({ params }: Props) {
+  const { tenant } = await params;
   return (
-    <>
-      <TenantLayout initialData={tenant} slug={slug} />
-      <CartPopup initialData={cart} />
-    </>
+    <Suspense>
+      <MenuView slug={tenant} />
+    </Suspense>
   );
 }
