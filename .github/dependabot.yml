@@ -1,0 +1,32 @@
+# Só atualizações de SEGURANÇA, agrupadas num PR por ecossistema.
+# open-pull-requests-limit: 0 desliga as atualizações de versão comuns
+# (upgrades como ESLint 9/vitest 4 são planejados à parte, no roadmap).
+# Os PRs de segurança abrem quando um alerta aparece; o resumo semanal
+# dos alertas vem por e-mail (configuração de notificações do GitHub).
+version: 2
+updates:
+  - package-ecosystem: npm
+    directory: "/"
+    schedule:
+      interval: weekly
+      day: monday
+      time: "09:00"
+      timezone: America/Sao_Paulo
+    open-pull-requests-limit: 0
+    groups:
+      seguranca-npm:
+        applies-to: security-updates
+        patterns: ["*"]
+
+  - package-ecosystem: github-actions
+    directory: "/"
+    schedule:
+      interval: weekly
+      day: monday
+      time: "09:00"
+      timezone: America/Sao_Paulo
+    open-pull-requests-limit: 0
+    groups:
+      seguranca-actions:
+        applies-to: security-updates
+        patterns: ["*"]
