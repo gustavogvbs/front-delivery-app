@@ -15,7 +15,30 @@ import { useQueryClient } from "@tanstack/react-query";
 import { Bell, BellOff, Loader2, LogOut } from "lucide-react";
 import { toast } from "sonner";
 
-import { useActiveOrders, usePanelTenant } from "./use-panel";
+import { useActiveOrders, usePanelTenant, useSetStoreOpen } from "./use-panel";
+
+const SECTIONS = [
+  {
+    href: "/painel",
+    label: "Pedidos",
+    match: (p: string) => p === "/painel" || p.startsWith("/painel/pedidos"),
+  },
+  {
+    href: "/painel/cardapio",
+    label: "Cardápio",
+    match: (p: string) => p.startsWith("/painel/cardapio"),
+  },
+  {
+    href: "/painel/entrega",
+    label: "Entrega",
+    match: (p: string) => p.startsWith("/painel/entrega"),
+  },
+  {
+    href: "/painel/loja",
+    label: "Loja",
+    match: (p: string) => p.startsWith("/painel/loja"),
+  },
+];
 
 /**
  * Moldura do painel: cabeçalho (loja, som, sair), aviso "Conectando…",
@@ -29,6 +52,7 @@ export function PanelShell({ children }: { children: React.ReactNode }) {
   const tenant = usePanelTenant();
   const active = useActiveOrders();
   const sound = useOrderSound();
+  const setOpen = useSetStoreOpen();
   const [leaving, setLeaving] = useState(false);
 
   const storeName = tenant.data?.name ?? "Painel";
@@ -101,7 +125,7 @@ export function PanelShell({ children }: { children: React.ReactNode }) {
             <span className="block truncate font-semibold text-zinc-900">
               {tenant.data?.name ?? "Carregando…"}
             </span>
-            <span className="block text-xs text-zinc-500">Pedidos</span>
+            <span className="block text-xs text-zinc-500">Painel da loja</span>
           </Link>
           <button
             type="button"
@@ -140,11 +164,48 @@ export function PanelShell({ children }: { children: React.ReactNode }) {
             Toque em qualquer lugar da tela para liberar o som dos avisos.
           </p>
         )}
+        <nav
+          aria-label="Seções do painel"
+          className="mx-auto grid max-w-3xl grid-cols-4 border-t px-2"
+        >
+          {SECTIONS.map((s) => {
+            const current = s.match(pathname);
+            return (
+              <Link
+                key={s.href}
+                href={s.href}
+                aria-current={current ? "page" : undefined}
+                className={`relative flex h-11 items-center justify-center gap-1 text-sm font-medium ${
+                  current
+                    ? "text-zinc-900 after:absolute after:inset-x-2 after:bottom-0 after:h-0.5 after:rounded-full after:bg-zinc-900"
+                    : "text-zinc-500"
+                }`}
+              >
+                {s.label}
+                {s.href === "/painel" && pendingCount > 0 && (
+                  <span className="min-w-5 rounded-full bg-amber-400 px-1.5 text-center text-xs font-bold text-amber-950">
+                    {pendingCount}
+                  </span>
+                )}
+              </Link>
+            );
+          })}
+        </nav>
         {tenant.data && !tenant.data.isOpen && (
-          <p className="bg-red-50 px-4 py-2 text-center text-sm text-red-800">
-            Sua loja está <strong>fechada</strong>: os clientes não conseguem
-            fazer pedidos.
-          </p>
+          <div className="flex items-center justify-between gap-3 bg-red-50 px-4 py-2 text-sm text-red-800">
+            <span>
+              Loja <strong>fechada</strong>: os clientes não conseguem pedir.
+            </span>
+            <button
+              type="button"
+              onClick={() => setOpen.mutate(true)}
+              disabled={setOpen.isPending}
+              className="flex h-10 shrink-0 items-center gap-1 rounded-lg bg-red-600 px-3 font-semibold text-white disabled:opacity-60"
+            >
+              {setOpen.isPending && <Loader2 className="size-4 animate-spin" />}
+              Abrir agora
+            </button>
+          </div>
         )}
       </header>
       {children}
