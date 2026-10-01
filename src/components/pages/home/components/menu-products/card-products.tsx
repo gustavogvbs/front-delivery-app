@@ -86,18 +86,22 @@ export const CardProducts = ({ product, category }: Props) => {
             <div className="relative flex flex-row-reverse w-full justify-between p-4  bg-white ">
               <div className="absolute top-0 right-0 h-full w-28 bg-primary opacity-10 z-10 rounded-e-md " />
               <div className="pr-4 relative z-20">
-                <Image
-                  style={{
-                    width: "auto",
-                    height: "auto",
-                    maxHeight: "96px",
-                    maxWidth: "96px",
-                  }}
-                  src={image.url}
-                  height={120}
-                  width={120}
-                  alt={`${image.alt} - Imagem do menu`}
-                />
+                {image?.url ? (
+                  <Image
+                    style={{
+                      width: "auto",
+                      height: "auto",
+                      maxHeight: "96px",
+                      maxWidth: "96px",
+                    }}
+                    src={image.url}
+                    height={120}
+                    width={120}
+                    alt={`${image.alt} - Imagem do menu`}
+                  />
+                ) : (
+                  <div className="size-24 rounded-md bg-zinc-200" />
+                )}
               </div>
               <div className="flex flex-col justify-center">
                 <p className="text-xs text-zinc-400">{category}</p>
@@ -105,7 +109,7 @@ export const CardProducts = ({ product, category }: Props) => {
                   {product.attributes.name}
                 </h5>
                 <h6 className="text-lg text-primary font-bold">
-                  {formatter.formatPrice(product.attributes.price)}
+                  {formatter.formatPrice(product.attributes.priceCents)}
                 </h6>
               </div>
             </div>

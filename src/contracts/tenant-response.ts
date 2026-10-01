@@ -14,7 +14,7 @@ export interface ITenantRelations {
 export interface ITenantResponse extends ResponseTimestamps, ITenantRelations {
   name: string;
   city: string;
-  permission: boolean;
+  approved: boolean;
   phone: string;
   primaryColor: string;
   slug: string;

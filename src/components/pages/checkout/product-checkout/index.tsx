@@ -16,18 +16,22 @@ export const ProductCheckout = ({ data, qtd }: Props) => {
       <div className="flex justify-between">
         <div className="flex gap-3 items-center">
           <div>
-            <Image
-              style={{
-                width: "auto",
-                height: "auto",
-                maxHeight: "75px",
-                maxWidth: "75px",
-              }}
-              src={data.attributes.image.url}
-              height={85}
-              width={85}
-              alt={`${data.attributes.image.alt} - Imagem do menu`}
-            />
+            {data.attributes.image?.url ? (
+              <Image
+                style={{
+                  width: "auto",
+                  height: "auto",
+                  maxHeight: "75px",
+                  maxWidth: "75px",
+                }}
+                src={data.attributes.image.url}
+                height={85}
+                width={85}
+                alt={`${data.attributes.image.alt} - Imagem do menu`}
+              />
+            ) : (
+              <div className="size-[75px] rounded-md bg-zinc-200" />
+            )}
           </div>
           <div>
             <p className="text-xs text-zinc-400 font-semibold">
@@ -35,7 +39,7 @@ export const ProductCheckout = ({ data, qtd }: Props) => {
             </p>
             <h5 className="text-base font-bold">{data.attributes.name}</h5>
             <h6 className="text-sm font-bold text-primary">
-              {formatter.formatPrice(data.attributes.price)}
+              {formatter.formatPrice(data.attributes.priceCents)}
             </h6>
           </div>
         </div>

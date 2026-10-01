@@ -17,8 +17,9 @@ export interface IProductRelations {
 export interface IProductData extends ResponseTimestamps, IProductRelations {
   name: string;
   slug: string;
-  image: IImageData;
-  price: number;
+  image: IImageData | null;
+  priceCents: number;
+  isAvailable: boolean;
   description: string;
 }
 

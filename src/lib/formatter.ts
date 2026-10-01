@@ -1,6 +1,7 @@
 export const Formatter = () => ({
-  formatPrice: (price: number) => {
-    return price.toLocaleString("pt-br", {
+  // valores chegam em centavos (inteiro)
+  formatPrice: (cents: number) => {
+    return (cents / 100).toLocaleString("pt-br", {
       minimumFractionDigits: 2,
       style: "currency",
       currency: "BRL",
