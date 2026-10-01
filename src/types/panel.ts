@@ -1,11 +1,5 @@
 // Contratos do painel da loja (ver docs-projeto/api.md). Dinheiro em centavos.
-import type {
-  DeliveryType,
-  LatLng,
-  OpenStatus,
-  OrderStatus,
-  PaymentMethod,
-} from "./api";
+import type { LatLng, OpenStatus, OrderStatus, PaymentMethod } from "./api";
 
 export interface Session {
   user: { id: string; name: string; email: string; role: string };
@@ -115,14 +109,20 @@ export interface ProductInput {
   sortOrder: number;
 }
 
+/** Tipos de pedido no painel (o checkout público só usa ENTREGA/RETIRADA). */
+export type OrderType = "ENTREGA" | "RETIRADA" | "BALCAO" | "CONSUMO_LOCAL";
+export type OrderSource = "ONLINE" | "MANUAL";
+
 export interface PanelOrderSummary {
   id: string;
   number: number;
   status: OrderStatus;
   createdAt: string;
   editedAt: string | null;
-  customerName: string;
-  deliveryType: DeliveryType;
+  customerName: string | null;
+  source: OrderSource;
+  deliveryType: OrderType;
+  tableLabel: string | null;
   paymentMethod: PaymentMethod;
   totalCents: number;
   deliveryFeePending: boolean;
@@ -162,8 +162,10 @@ export interface PanelOrder {
   createdAt: string;
   updatedAt: string;
   editedAt: string | null;
-  customer: { name: string; phone: string };
-  deliveryType: DeliveryType;
+  customer: { name: string | null; phone: string | null };
+  source: OrderSource;
+  deliveryType: OrderType;
+  tableLabel: string | null;
   address: {
     cep: string | null;
     street: string | null;
@@ -210,4 +212,46 @@ export interface PanelCategory {
   name: string;
   sortOrder: number;
   products: PanelProduct[];
+}
+
+/** Corpo do pedido registrado no painel (POST /tenant/me/orders e /preview). */
+export interface ManualOrderBody {
+  deliveryType: OrderType;
+  tableLabel?: string;
+  customerName?: string;
+  customerPhone?: string;
+  address?: {
+    cep: string;
+    street: string;
+    number: string;
+    complement?: string;
+    neighborhood: string;
+    city: string;
+    state?: string;
+    reference?: string;
+  };
+  location?: LatLng;
+  deliveryFeeCents?: number;
+  paymentMethod: PaymentMethod;
+  changeForCents?: number;
+  notes?: string;
+  items: { productId: string; quantity: number; notes?: string }[];
+}
+
+export interface ManualOrderPreview {
+  items: {
+    productId: string;
+    productName: string;
+    unitPriceCents: number;
+    quantity: number;
+    notes: string | null;
+    totalCents: number;
+  }[];
+  subtotalCents: number;
+  deliveryFeeCents: number | null;
+  deliveryFeePending: boolean;
+  distanceMeters: number | null;
+  totalCents: number;
+  storeOpen: boolean;
+  openLabel: string;
 }
