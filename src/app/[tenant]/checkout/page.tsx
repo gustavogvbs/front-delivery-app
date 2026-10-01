@@ -1,16 +1,10 @@
-"use server";
-
 import { cookies } from "next/headers";
 
 import CheckoutLayout from "@/components/pages/checkout";
 import { api } from "@/lib/api";
 
-import { getCookie } from "cookies-next";
-
 interface Props {
-  params: {
-    tenant: string;
-  };
+  params: Promise<{ tenant: string }>;
 }
 
 async function GetTenantInitial(slug: string) {
@@ -24,12 +18,13 @@ async function GetTenantInitial(slug: string) {
 }
 
 export default async function Page({ params }: Props) {
+  const { tenant: slug } = await params;
   const { productApi } = api();
 
-  const tenant = await GetTenantInitial(params.tenant);
+  const tenant = await GetTenantInitial(slug);
 
-  const cartCookie = getCookie("cart", { cookies });
-  const cart = await productApi.GET_CART(cartCookie, params.tenant);
+  const cartCookie = (await cookies()).get("cart")?.value;
+  const cart = await productApi.GET_CART(cartCookie, slug);
 
   if (!tenant || !tenant?.data) return <div>Error</div>;
   return (

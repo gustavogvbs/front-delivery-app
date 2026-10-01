@@ -1,7 +1,8 @@
 import { z } from "zod";
 
 const schemaEnv = z.object({
-  NEXT_PUBLIC_API_URL: z.string(),
+  // URL pública da API (Render), chamada direto pelo navegador no cardápio e no checkout
+  NEXT_PUBLIC_API_URL: z.string().url(),
 });
 
 export const env = schemaEnv.parse({
