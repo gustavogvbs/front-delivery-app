@@ -28,7 +28,10 @@ function toApiError(error: unknown): ApiError {
   return { status: 0, message: "Erro inesperado." };
 }
 
-function createClient(baseURL: string): AxiosInstance {
+function createClient(
+  baseURL: string,
+  onUnauthorized?: (url: string) => void,
+): AxiosInstance {
   const client = axios.create({
     baseURL,
     withCredentials: true,
@@ -37,7 +40,15 @@ function createClient(baseURL: string): AxiosInstance {
   });
   client.interceptors.response.use(
     (response) => response.data,
-    (error) => Promise.reject(toApiError(error)),
+    (error) => {
+      const apiError = toApiError(error);
+      if (apiError.status === 401 && onUnauthorized) {
+        onUnauthorized(
+          error instanceof AxiosError ? error.config?.url ?? "" : "",
+        );
+      }
+      return Promise.reject(apiError);
+    },
   );
   return client;
 }
@@ -45,8 +56,33 @@ function createClient(baseURL: string): AxiosInstance {
 /** Cardápio e pedidos: direto na API (sem cookie; mantém o IP real do cliente). */
 export const publicApi = createClient(env.NEXT_PUBLIC_API_URL);
 
+/** Página do painel atual, para voltar a ela depois do login. */
+export const LOGIN_PATH = "/painel/login";
+
+/** Só caminhos internos do painel (evita redirecionamento aberto: //outro.site). */
+export const safeNextPath = (value: string | null | undefined) =>
+  value &&
+  value.startsWith("/painel") &&
+  !value.startsWith("//") &&
+  !value.startsWith(LOGIN_PATH)
+    ? value
+    : "/painel";
+
+let redirecting = false;
+/** Sessão expirada ou ausente: vai para o login guardando a página de origem. */
+function redirectToLogin(url: string) {
+  if (typeof window === "undefined" || redirecting) return;
+  if (url.includes("/users/login")) return; // senha errada não é sessão expirada
+  if (window.location.pathname.startsWith(LOGIN_PATH)) return;
+  redirecting = true;
+  const next = safeNextPath(window.location.pathname + window.location.search);
+  window.location.replace(
+    `${LOGIN_PATH}?next=${encodeURIComponent(next)}&expirou=1`,
+  );
+}
+
 /**
  * Painel da loja: via rewrite /api/* do Next (mesmo domínio do front), para o
  * cookie de sessão ser first-party. Use só no navegador.
  */
-export const panelApi = createClient("/api");
+export const panelApi = createClient("/api", redirectToLogin);
