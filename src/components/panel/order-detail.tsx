@@ -3,9 +3,11 @@
 import Link from "next/link";
 import { useRef, useState } from "react";
 
+import { OrderItemLine } from "@/components/orders/order-item-line";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
 import { formatBRL, formatKm, maskCep } from "@/lib/format";
 import { isApiError } from "@/lib/http";
+import { orderTypeLabel, orderTypeLongLabel } from "@/lib/order-lines";
 import {
   dateTimeShort,
   EVENT_LABEL,
@@ -129,7 +131,7 @@ export function OrderDetail({ id }: { id: string }) {
     );
   }
 
-  const pickup = order.deliveryType === "RETIRADA";
+  const delivery = order.deliveryType === "ENTREGA";
   const editable = order.status === "PENDENTE" || order.status === "ACEITO";
   const a = order.address;
   const finalReason =
@@ -164,6 +166,17 @@ export function OrderDetail({ id }: { id: string }) {
         >
           {STATUS_LABEL[order.status]}
         </span>
+        <span
+          className="rounded-full bg-zinc-900 px-2.5 py-0.5 text-sm font-semibold text-white"
+          data-testid="order-type"
+        >
+          {orderTypeLabel(order)}
+        </span>
+        {order.source === "MANUAL" && (
+          <span className="rounded-full border border-zinc-300 px-2.5 py-0.5 text-sm text-zinc-600">
+            Manual
+          </span>
+        )}
       </div>
       <p className="text-sm text-zinc-500">
         Recebido {dateTimeShort(order.createdAt)}
@@ -187,15 +200,25 @@ export function OrderDetail({ id }: { id: string }) {
       )}
 
       <Card title="Cliente">
-        <p className="font-medium text-zinc-900">{order.customer.name}</p>
+        <p className="font-medium text-zinc-900">
+          {order.customer.name ?? (
+            <span className="font-normal text-zinc-500">
+              Nome não informado
+            </span>
+          )}
+        </p>
         <div className="mt-2 flex flex-wrap gap-2">
-          <a
-            href={`tel:+${order.customer.phone.replace(/\D/g, "")}`}
-            className="flex h-11 items-center gap-2 rounded-xl border border-zinc-300 px-3 text-sm font-medium"
-          >
-            <Phone className="size-4" />
-            {phoneText(order.customer.phone)}
-          </a>
+          {order.customer.phone ? (
+            <a
+              href={`tel:+${order.customer.phone.replace(/\D/g, "")}`}
+              className="flex h-11 items-center gap-2 rounded-xl border border-zinc-300 px-3 text-sm font-medium"
+            >
+              <Phone className="size-4" />
+              {phoneText(order.customer.phone)}
+            </a>
+          ) : (
+            <span className="text-sm text-zinc-500">Sem telefone</span>
+          )}
           {order.notifyCustomerUrl && !notify && (
             <a
               href={order.notifyCustomerUrl}
@@ -208,9 +231,17 @@ export function OrderDetail({ id }: { id: string }) {
         </div>
       </Card>
 
-      <Card title={pickup ? "Retirada no local" : "Entrega"}>
-        {pickup ? (
-          <p className="text-zinc-700">O cliente vai buscar na loja.</p>
+      <Card title={orderTypeLongLabel(order)}>
+        {!delivery ? (
+          <p className="text-zinc-700">
+            {order.deliveryType === "RETIRADA"
+              ? "O cliente vai buscar na loja."
+              : order.deliveryType === "BALCAO"
+                ? "Pedido no balcão / para viagem."
+                : order.tableLabel
+                  ? `Consumo no local · ${order.tableLabel}.`
+                  : "Consumo no local."}
+          </p>
         ) : (
           <>
             {a && (
@@ -251,18 +282,8 @@ export function OrderDetail({ id }: { id: string }) {
       <Card title="Itens">
         <ul className="space-y-2">
           {order.items.map((i) => (
-            <li key={i.id} className="flex justify-between gap-3">
-              <span className="text-zinc-800">
-                <strong>{i.quantity}x</strong> {i.productName}
-                {i.notes && (
-                  <span className="block text-sm text-amber-800">
-                    Obs.: {i.notes}
-                  </span>
-                )}
-              </span>
-              <span className="shrink-0 tabular-nums">
-                {formatBRL(i.totalCents)}
-              </span>
+            <li key={i.id}>
+              <OrderItemLine item={i} />
             </li>
           ))}
         </ul>
@@ -274,16 +295,16 @@ export function OrderDetail({ id }: { id: string }) {
         {/* totais SEMPRE do back (inclusive depois de editar) */}
         <dl className="mt-3 space-y-1 border-t pt-3 text-sm text-zinc-600">
           <Row label="Subtotal" value={formatBRL(order.subtotalCents)} />
-          <Row
-            label={pickup ? "Retirada" : "Entrega"}
-            value={
-              pickup
-                ? "Grátis"
-                : order.deliveryFeeCents === null
+          {delivery && (
+            <Row
+              label="Entrega"
+              value={
+                order.deliveryFeeCents === null
                   ? "A combinar"
                   : formatBRL(order.deliveryFeeCents)
-            }
-          />
+              }
+            />
+          )}
           <div
             className="flex justify-between text-base font-bold text-zinc-900"
             data-testid="order-total"

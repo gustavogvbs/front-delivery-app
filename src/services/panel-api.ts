@@ -2,6 +2,8 @@ import { panelApi } from "@/lib/http";
 import type {
   DeliveryFeeTier,
   EditOrderBody,
+  ManualOrderBody,
+  ManualOrderPreview,
   OpeningInterval,
   OpeningMode,
   OrderAction,
@@ -259,5 +261,27 @@ export async function clearOpenState(): Promise<PanelTenant> {
   const res = (await panelApi.delete(
     "/tenant/me/open-state",
   )) as Envelope<PanelTenant>;
+  return res.data;
+}
+
+// ── pedido registrado no painel ──
+
+export async function previewManualOrder(
+  body: ManualOrderBody,
+): Promise<ManualOrderPreview> {
+  const res = (await panelApi.post(
+    "/tenant/me/orders/preview",
+    body,
+  )) as Envelope<ManualOrderPreview>;
+  return res.data;
+}
+
+export async function createManualOrder(
+  body: ManualOrderBody,
+  idempotencyKey: string,
+): Promise<PanelOrder> {
+  const res = (await panelApi.post("/tenant/me/orders", body, {
+    headers: { "Idempotency-Key": idempotencyKey },
+  })) as Envelope<PanelOrder>;
   return res.data;
 }
