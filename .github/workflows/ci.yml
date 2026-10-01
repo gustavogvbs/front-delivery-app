@@ -1,0 +1,40 @@
+# CI do front-end: tipos, lint e build. Sem secrets: as URLs são de exemplo
+# (o build não chama a API; os dados são buscados no navegador).
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  ci:
+    name: ci
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    env:
+      NEXT_PUBLIC_API_URL: https://api.example.invalid
+      API_URL: https://api.example.invalid
+      NEXT_TELEMETRY_DISABLED: "1"
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24.12.0
+          cache: npm
+      - run: npm ci
+      # O build vem antes do typecheck: ele gera o next-env.d.ts (não versionado),
+      # que declara os tipos de imagem usados no mapa (marker-icon.png etc.)
+      - name: build
+        run: npm run build
+      - name: typecheck
+        run: npm run typecheck
+      - name: lint
+        run: npm run lint
