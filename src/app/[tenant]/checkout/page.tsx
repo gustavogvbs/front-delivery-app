@@ -3,8 +3,6 @@
 import { cookies } from "next/headers";
 
 import CheckoutLayout from "@/components/pages/checkout";
-import { TenantLayout } from "@/components/pages/home";
-import { CartPopup } from "@/components/pages/home/components/cart";
 import { api } from "@/lib/api";
 
 import { getCookie } from "cookies-next";

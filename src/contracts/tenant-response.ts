@@ -2,10 +2,10 @@ import {
   ResponseAttributes,
   ResponseData,
   ResponseDataArray,
-  ResponseTimestamps
-} from './contracts-response';
+  ResponseTimestamps,
+} from "./contracts-response";
 
-import { CategoryResponseAttr } from './category-response';
+import { CategoryResponseAttr } from "./category-response";
 
 export interface ITenantRelations {
   categories: CategoryResponseAttr[];
