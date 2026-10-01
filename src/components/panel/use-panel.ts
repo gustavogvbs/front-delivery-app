@@ -1,13 +1,17 @@
 "use client";
 
+import { isApiError } from "@/lib/http";
 import { withWakeRetry } from "@/lib/wake";
 import {
   getPanelOrder,
   getPanelTenant,
   listOrders,
+  listPanelCategories,
+  updateSettings,
 } from "@/services/panel-api";
 import type { PanelOrderSummary } from "@/types/panel";
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { toast } from "sonner";
 
 /** Intervalo da atualização automática da lista (pausa com a aba oculta). */
 export const POLL_MS = 20_000;
@@ -18,6 +22,7 @@ export const panelKeys = {
   active: ["panel", "orders", "active"] as const,
   finished: ["panel", "orders", "finished"] as const,
   order: (id: string) => ["panel", "order", id] as const,
+  catalog: ["panel", "categories"] as const,
 };
 
 export function usePanelTenant() {
@@ -73,6 +78,37 @@ export function usePanelOrder(id: string) {
     refetchInterval: POLL_MS,
     refetchIntervalInBackground: false,
     staleTime: 0,
+    retry: false,
+  });
+}
+
+/** Abre/fecha a loja (botão em destaque). */
+export function useSetStoreOpen() {
+  const qc = useQueryClient();
+  return useMutation({
+    mutationFn: (isOpen: boolean) => updateSettings({ isOpen }),
+    onSuccess: (data) => {
+      qc.setQueryData(panelKeys.tenant, data);
+      toast.success(
+        data.isOpen
+          ? "Loja aberta: os clientes já podem pedir."
+          : "Loja fechada: o cardápio continua visível, mas sem pedidos.",
+      );
+    },
+    onError: (err) =>
+      toast.error(
+        isApiError(err) && err.status !== 0
+          ? err.message
+          : "Sem conexão com o servidor. Tente de novo.",
+      ),
+  });
+}
+
+export function useCatalog() {
+  return useQuery({
+    queryKey: panelKeys.catalog,
+    queryFn: () => withWakeRetry(listPanelCategories),
+    staleTime: 30_000,
     retry: false,
   });
 }

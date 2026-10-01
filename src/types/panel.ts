@@ -6,13 +6,84 @@ export interface Session {
   tenant: { id: string; slug: string; name: string; approved: boolean } | null;
 }
 
-/** GET /tenant/me (só o que o painel de pedidos usa). */
+/** GET /tenant/me: configurações completas da loja. */
 export interface PanelTenant {
   id: string;
   slug: string;
   name: string;
+  phone: string | null;
+  whatsapp: string;
+  primaryColor: string;
+  approved: boolean;
+  isOpen: boolean;
+  deliveryTimeMinMinutes: number | null;
+  deliveryTimeMaxMinutes: number | null;
+  pixKey: string | null;
+  minOrderCents: number | null;
+  acceptsPickup: boolean;
+  acceptsDelivery: boolean;
+  address: {
+    cep: string | null;
+    street: string | null;
+    number: string | null;
+    complement: string | null;
+    neighborhood: string | null;
+    city: string;
+    state: string | null;
+  };
+  location: LatLng | null;
+  logo: { url: string; alt: string } | null;
+  initials: string;
+  deliveryFeeTiers: DeliveryFeeTier[];
+}
+
+export interface DeliveryFeeTier {
+  maxMeters: number;
+  feeCents: number;
+}
+
+/** PATCH /tenant/me (parcial). */
+export type SettingsPatch = Partial<{
+  name: string;
+  phone: string | null;
+  whatsapp: string;
   primaryColor: string;
   isOpen: boolean;
+  deliveryTimeMinMinutes: number | null;
+  deliveryTimeMaxMinutes: number | null;
+  pixKey: string | null;
+  minOrderCents: number | null;
+  acceptsPickup: boolean;
+  addressCep: string | null;
+  addressStreet: string | null;
+  addressNumber: string | null;
+  addressComplement: string | null;
+  addressNeighborhood: string | null;
+  city: string;
+  addressState: string | null;
+  latitude: number | null;
+  longitude: number | null;
+}>;
+
+export interface PanelProduct {
+  id: string;
+  slug: string;
+  name: string;
+  description: string | null;
+  priceCents: number;
+  isAvailable: boolean;
+  sortOrder: number;
+  categoryId: string;
+  image: { url: string; alt: string } | null;
+}
+
+export interface ProductInput {
+  name: string;
+  description: string | null;
+  priceCents: number;
+  categoryId: string;
+  isAvailable: boolean;
+  sortOrder: number;
 }
 
 export interface PanelOrderSummary {
@@ -103,14 +174,11 @@ export interface EditOrderBody {
   changeForCents?: number | null;
 }
 
-/** GET /tenant/me/categories (para adicionar itens na edição). */
+/** GET /tenant/me/categories (cardápio do painel e itens na edição do pedido). */
 export interface PanelCategory {
   id: string;
+  slug: string;
   name: string;
-  products: {
-    id: string;
-    name: string;
-    priceCents: number;
-    isAvailable: boolean;
-  }[];
+  sortOrder: number;
+  products: PanelProduct[];
 }

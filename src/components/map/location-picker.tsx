@@ -22,6 +22,8 @@ interface Props {
   pin: LatLng | null;
   onPinChange: (pin: LatLng) => void;
   recenterKey?: string | number;
+  /** complemento do texto de ajuda: "da entrega" (cliente) ou "da loja" (painel) */
+  placeLabel?: string;
 }
 
 export function geolocationErrorMessage(
@@ -46,6 +48,7 @@ export function LocationPicker({
   pin,
   onPinChange,
   recenterKey,
+  placeLabel = "da entrega",
 }: Props) {
   const [locating, setLocating] = useState(false);
   const [geoError, setGeoError] = useState<string | null>(null);
@@ -96,7 +99,7 @@ export function LocationPicker({
         <MapPin className="mt-0.5 size-4 shrink-0 text-brand" />
         {pin
           ? "Confira o pino: arraste ou toque no mapa para ajustar."
-          : "Toque no mapa no local da entrega para posicionar o pino."}
+          : `Toque no mapa no local ${placeLabel} para posicionar o pino.`}
       </p>
       <button
         type="button"
