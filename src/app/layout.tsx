@@ -31,7 +31,7 @@ export default function RootLayout({
 }>) {
   return (
     <html className={cn(inter.variable, calistoga.variable)} lang="en">
-      <body style={{ position: "unset !important" }}>
+      <body>
         <Providers>{children}</Providers>
       </body>
     </html>
