@@ -75,10 +75,11 @@ export function useFinishedOrders(enabled: boolean) {
   });
 }
 
-export function usePanelOrder(id: string) {
+export function usePanelOrder(id: string, enabled = true) {
   return useQuery({
     queryKey: panelKeys.order(id),
     queryFn: () => withWakeRetry(() => getPanelOrder(id)),
+    enabled: enabled && id !== "",
     refetchInterval: POLL_MS,
     refetchIntervalInBackground: false,
     staleTime: 0,

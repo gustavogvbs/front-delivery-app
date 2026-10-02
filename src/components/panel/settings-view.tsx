@@ -22,6 +22,7 @@ import { ExternalLink, Eye, EyeOff, ImageUp, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 
 import { OpenControl } from "./open-control";
+import { PrintSettings } from "./print-settings";
 import { panelKeys, usePanelTenant } from "./use-panel";
 
 /** Tela "Loja": aberto/fechado, logo, dados e senha. */
@@ -43,6 +44,7 @@ export function SettingsView() {
         key={tenant.data.name + tenant.data.whatsapp}
         tenant={tenant.data}
       />
+      <PrintSettings tenant={tenant.data} />
       <PasswordForm />
     </main>
   );

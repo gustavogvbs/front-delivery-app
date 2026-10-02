@@ -35,6 +35,10 @@ export interface PanelTenant {
   logo: { url: string; alt: string } | null;
   initials: string;
   deliveryFeeTiers: DeliveryFeeTier[];
+  /** largura da bobina (mm) e vias padrão da loja */
+  printPaperWidth: 58 | 80;
+  printKitchenCopy: boolean;
+  printDeliveryCopy: boolean;
   openingMode: OpeningMode;
   timeZone: string;
   openingHours: OpeningInterval[];
@@ -86,6 +90,9 @@ export type SettingsPatch = Partial<{
   addressState: string | null;
   latitude: number | null;
   longitude: number | null;
+  printPaperWidth: 58 | 80;
+  printKitchenCopy: boolean;
+  printDeliveryCopy: boolean;
 }>;
 
 export interface PanelProduct {
