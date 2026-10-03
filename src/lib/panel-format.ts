@@ -23,6 +23,10 @@ export const PAYMENT_LABEL: Record<PaymentMethod, string> = {
   CARTAO: "Cartão (maquininha)",
 };
 
+/** Forma de pagamento do pedido; null = pedido de comanda (pago no fechamento). */
+export const paymentText = (m: PaymentMethod | null) =>
+  m === null ? "Na comanda" : PAYMENT_LABEL[m];
+
 export const EVENT_LABEL: Record<PanelOrderEvent["type"], string> = {
   CRIADO: "Pedido recebido",
   ACEITO: "Aceito",
@@ -56,6 +60,18 @@ export const ago = (iso: string, now = Date.now()) => {
   if (min < 60) return `há ${min} min`;
   return `há ${Math.floor(min / 60)} h`;
 };
+
+/** Tempo desde o instante: "45 min", "1 h 20 min" (comanda aberta). */
+export const elapsed = (iso: string, now = Date.now()) => {
+  const min = Math.max(0, Math.floor((now - new Date(iso).getTime()) / 60000));
+  if (min < 60) return `${min} min`;
+  const h = Math.floor(min / 60);
+  return min % 60 ? `${h} h ${min % 60} min` : `${h} h`;
+};
+
+/** Data de hoje (AAAA-MM-DD) no fuso da loja. */
+export const todayIn = (timeZone: string, now = new Date()) =>
+  new Intl.DateTimeFormat("en-CA", { timeZone }).format(now);
 
 /** Telefone salvo com DDI (5515999998888) → (15) 99999-8888. */
 export const phoneText = (phone: string) => {

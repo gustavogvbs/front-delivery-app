@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useRef, useState } from "react";
 
 import { Stepper } from "@/components/common/stepper";
@@ -34,10 +34,15 @@ import { useQueryClient } from "@tanstack/react-query";
 import { ArrowLeft, Loader2, Search, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 
-import { panelKeys, useCatalog, usePanelTenant } from "./use-panel";
+import {
+  panelKeys,
+  useCatalog,
+  useOpenTabs,
+  usePanelTenant,
+} from "./use-panel";
 
+// Balcão saiu das opções (Etapa 3): o back ainda aceita, só não é oferecido
 const TYPES: { key: OrderType; label: string }[] = [
-  { key: "BALCAO", label: "Balcão" },
   { key: "CONSUMO_LOCAL", label: "Comer no local" },
   { key: "RETIRADA", label: "Retirada" },
   { key: "ENTREGA", label: "Entrega" },
@@ -46,6 +51,13 @@ const PAYMENTS: { key: PaymentMethod; label: string }[] = [
   { key: "DINHEIRO", label: "Dinheiro" },
   { key: "PIX", label: "Pix" },
   { key: "CARTAO", label: "Cartão" },
+];
+/** Comer no local: lançar na comanda aberta, abrir comanda nova ou avulso (paga agora). */
+type LocalMode = "aberta" | "nova" | "avulso";
+const LOCAL_MODES: { key: LocalMode; label: string }[] = [
+  { key: "aberta", label: "Comanda aberta" },
+  { key: "nova", label: "Abrir comanda" },
+  { key: "avulso", label: "Avulso (paga agora)" },
 ];
 const FALLBACK_CENTER: LatLng = { lat: -23.5505, lng: -46.6333 };
 
@@ -71,9 +83,11 @@ interface Line {
   notes: string;
 }
 
+/** ?comanda=<id>: "Adicionar pedido" da comanda (já vem escolhida). */
 export function NewOrderView() {
   const tenant = usePanelTenant();
   const catalog = useCatalog();
+  const presetTab = useSearchParams().get("comanda") ?? "";
   if (!tenant.data || !catalog.data) {
     return (
       <main className="flex justify-center py-10 text-zinc-400">
@@ -81,15 +95,23 @@ export function NewOrderView() {
       </main>
     );
   }
-  return <NewOrderForm tenant={tenant.data} categories={catalog.data} />;
+  return (
+    <NewOrderForm
+      tenant={tenant.data}
+      categories={catalog.data}
+      presetTab={presetTab}
+    />
+  );
 }
 
 function NewOrderForm({
   tenant,
   categories,
+  presetTab,
 }: {
   tenant: PanelTenant;
   categories: PanelCategory[];
+  presetTab: string;
 }) {
   const router = useRouter();
   const qc = useQueryClient();
@@ -100,7 +122,12 @@ function NewOrderForm({
   const [lines, setLines] = useState<Line[]>([]);
 
   // ── pedido ──
-  const [type, setType] = useState<OrderType>("BALCAO");
+  const [type, setType] = useState<OrderType>("CONSUMO_LOCAL");
+  const [localMode, setLocalMode] = useState<LocalMode>(
+    presetTab ? "aberta" : "avulso",
+  );
+  const [tabId, setTabId] = useState(presetTab);
+  const [newTabLabel, setNewTabLabel] = useState("");
   const [table, setTable] = useState("");
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
@@ -166,20 +193,33 @@ function NewOrderForm({
     setLines((ls) => ls.map((l) => (l.key === key ? { ...l, ...patch } : l)));
 
   const delivery = type === "ENTREGA";
+  const local = type === "CONSUMO_LOCAL";
+  // pedido de comanda: sem pagamento aqui (é pago no fechamento da comanda)
+  const onTab = local && localMode !== "avulso";
+  const openTabs = useOpenTabs(local);
+  const chosenTab = openTabs.data?.find((tb) => tb.id === tabId) ?? null;
 
   // corpo enviado ao back (prévia e criação): nada calculado aqui
   const body: ManualOrderBody | null = useMemo(() => {
     if (lines.length === 0) return null;
     const b: ManualOrderBody = {
       deliveryType: type,
-      paymentMethod: payment,
       items: lines.map((l) => ({
         productId: l.productId,
         quantity: l.quantity,
         ...(l.notes.trim() ? { notes: l.notes.trim() } : {}),
       })),
     };
-    if (type === "CONSUMO_LOCAL" && table.trim()) b.tableLabel = table.trim();
+    if (local && localMode === "aberta") {
+      if (!tabId) return null; // escolha a comanda
+      b.tabId = tabId;
+    } else if (local && localMode === "nova") {
+      if (!newTabLabel.trim()) return null; // informe a identificação
+      b.newTabLabel = newTabLabel.trim();
+    } else {
+      b.paymentMethod = payment;
+      if (local && table.trim()) b.tableLabel = table.trim();
+    }
     if (name.trim()) b.customerName = name.trim();
     if (onlyDigits(phone)) b.customerPhone = onlyDigits(phone);
     if (delivery) {
@@ -198,13 +238,18 @@ function NewOrderForm({
       if (fee.trim() !== "" && feeCents !== null) b.deliveryFeeCents = feeCents;
     }
     const changeCents = maskMoney(change).cents;
-    if (payment === "DINHEIRO" && changeCents !== null)
+    if (!onTab && payment === "DINHEIRO" && changeCents !== null)
       b.changeForCents = changeCents;
     if (notes.trim()) b.notes = notes.trim();
     return b;
   }, [
     lines,
     type,
+    local,
+    localMode,
+    onTab,
+    tabId,
+    newTabLabel,
     payment,
     table,
     name,
@@ -283,10 +328,19 @@ function NewOrderForm({
       remove("session", keyStorage(tenant.id));
       void qc.invalidateQueries({ queryKey: panelKeys.orders });
       qc.setQueryData(panelKeys.order(order.id), order);
-      toast.success(`Pedido #${order.number} registrado.`);
       // impressão automática ao registrar (só se ligada NESTE aparelho)
       autoPrint(tenant, order.id, "manual");
-      router.push(`/painel/pedidos/${order.id}`);
+      if (order.tab) {
+        // pedido de comanda: volta para a comanda
+        void qc.invalidateQueries({ queryKey: panelKeys.tabs });
+        toast.success(
+          `Pedido #${order.number} lançado na comanda ${order.tab.label}.`,
+        );
+        router.push(`/painel/mesas/${order.tab.id}`);
+      } else {
+        toast.success(`Pedido #${order.number} registrado.`);
+        router.push(`/painel/pedidos/${order.id}`);
+      }
     } catch (err) {
       if (isApiError(err) && err.status === 422) {
         // a chave já gerou um pedido com outros dados (ex.: resposta perdida)
@@ -311,9 +365,9 @@ function NewOrderForm({
     <main className="mx-auto max-w-6xl px-4 pb-36 pt-3 lg:pb-10">
       <div className="mb-3 flex items-center gap-2">
         <Link
-          href="/painel"
+          href={presetTab ? `/painel/mesas/${presetTab}` : "/painel"}
           className="-ml-2 flex size-11 items-center justify-center rounded-full text-zinc-700 hover:bg-zinc-100"
-          aria-label="Voltar aos pedidos"
+          aria-label={presetTab ? "Voltar à comanda" : "Voltar aos pedidos"}
         >
           <ArrowLeft className="size-5" />
         </Link>
@@ -326,7 +380,7 @@ function NewOrderForm({
           data-testid="closed-hint"
         >
           A loja está fechada para pedidos online ({preview.openLabel}). O
-          pedido do balcão é registrado normalmente.
+          pedido registrado aqui no painel é aceito normalmente.
         </p>
       )}
 
@@ -460,7 +514,7 @@ function NewOrderForm({
             <legend className="font-semibold text-zinc-900">
               Tipo do pedido
             </legend>
-            <div className="mt-2 grid grid-cols-2 gap-2">
+            <div className="mt-2 grid grid-cols-3 gap-2">
               {TYPES.map((t) => (
                 <button
                   key={t.key}
@@ -479,18 +533,108 @@ function NewOrderForm({
             </div>
           </fieldset>
 
-          {type === "CONSUMO_LOCAL" && (
-            <label className="block">
-              <span className="text-sm font-medium text-zinc-700">
-                Mesa ou identificação (opcional)
-              </span>
-              <input
-                value={table}
-                onChange={(e) => setTable(e.target.value.slice(0, 40))}
-                placeholder="Ex.: Mesa 5, Varanda 2"
-                className={`mt-1 ${field}`}
-              />
-            </label>
+          {local && (
+            <fieldset className="space-y-3">
+              <legend className="font-semibold text-zinc-900">Comanda</legend>
+              <div className="grid grid-cols-3 gap-2">
+                {LOCAL_MODES.map((m) => (
+                  <button
+                    key={m.key}
+                    type="button"
+                    aria-pressed={localMode === m.key}
+                    onClick={() => setLocalMode(m.key)}
+                    className={`min-h-12 rounded-xl border px-1 text-sm font-semibold leading-tight ${
+                      localMode === m.key
+                        ? "border-zinc-900 bg-zinc-900 text-white"
+                        : "border-zinc-300 text-zinc-700"
+                    }`}
+                  >
+                    {m.label}
+                  </button>
+                ))}
+              </div>
+
+              {localMode === "aberta" &&
+                (openTabs.isLoading ? (
+                  <p className="flex items-center gap-1 text-sm text-zinc-500">
+                    <Loader2 className="size-4 animate-spin" /> Carregando
+                    comandas…
+                  </p>
+                ) : (openTabs.data ?? []).length === 0 ? (
+                  <p className="rounded-xl bg-zinc-50 p-3 text-sm text-zinc-600">
+                    Nenhuma comanda aberta. Use “Abrir comanda”.
+                  </p>
+                ) : (
+                  <div
+                    role="radiogroup"
+                    aria-label="Comanda aberta"
+                    className="grid max-h-60 grid-cols-2 gap-2 overflow-y-auto"
+                  >
+                    {openTabs.data!.map((tb) => (
+                      <button
+                        key={tb.id}
+                        type="button"
+                        role="radio"
+                        aria-checked={tabId === tb.id}
+                        onClick={() => setTabId(tb.id)}
+                        className={`min-h-12 rounded-xl border-2 px-2 py-1 text-left ${
+                          tabId === tb.id
+                            ? "border-zinc-900 bg-zinc-900 text-white"
+                            : "border-zinc-200 text-zinc-800"
+                        }`}
+                      >
+                        <span className="block truncate font-semibold">
+                          {tb.label}
+                        </span>
+                        <span className="block text-xs opacity-80 tabular-nums">
+                          {formatBRL(tb.consumedCents)}
+                        </span>
+                      </button>
+                    ))}
+                  </div>
+                ))}
+              {localMode === "aberta" &&
+                tabId &&
+                openTabs.data &&
+                !chosenTab && (
+                  <p role="alert" className="text-sm text-red-700">
+                    Esta comanda não está mais aberta. Escolha outra.
+                  </p>
+                )}
+
+              {localMode === "nova" && (
+                <label className="block">
+                  <span className="text-sm font-medium text-zinc-700">
+                    Identificação da comanda
+                  </span>
+                  <input
+                    value={newTabLabel}
+                    onChange={(e) =>
+                      setNewTabLabel(e.target.value.slice(0, 40))
+                    }
+                    placeholder="Ex.: Mesa 5, João, Varanda 2"
+                    className={`mt-1 ${field}`}
+                  />
+                  <span className="mt-1 block text-xs text-zinc-500">
+                    A comanda é aberta junto com este pedido.
+                  </span>
+                </label>
+              )}
+
+              {localMode === "avulso" && (
+                <label className="block">
+                  <span className="text-sm font-medium text-zinc-700">
+                    Mesa ou identificação (opcional)
+                  </span>
+                  <input
+                    value={table}
+                    onChange={(e) => setTable(e.target.value.slice(0, 40))}
+                    placeholder="Ex.: Mesa 5, Varanda 2"
+                    className={`mt-1 ${field}`}
+                  />
+                </label>
+              )}
+            </fieldset>
           )}
 
           <div className="grid gap-3 sm:grid-cols-2">
@@ -639,40 +783,46 @@ function NewOrderForm({
             </div>
           )}
 
-          <fieldset>
-            <legend className="font-semibold text-zinc-900">Pagamento</legend>
-            <div className="mt-2 grid grid-cols-3 gap-2">
-              {PAYMENTS.map((p) => (
-                <button
-                  key={p.key}
-                  type="button"
-                  aria-pressed={payment === p.key}
-                  onClick={() => setPayment(p.key)}
-                  className={`h-11 rounded-xl border text-sm font-semibold ${
-                    payment === p.key
-                      ? "border-zinc-900 bg-zinc-900 text-white"
-                      : "border-zinc-300 text-zinc-700"
-                  }`}
-                >
-                  {p.label}
-                </button>
-              ))}
-            </div>
-            {payment === "DINHEIRO" && (
-              <label className="mt-3 block">
-                <span className="text-sm text-zinc-700">
-                  Troco para (opcional)
-                </span>
-                <input
-                  value={change}
-                  inputMode="numeric"
-                  onChange={(e) => setChange(maskMoney(e.target.value).text)}
-                  placeholder="Sem troco"
-                  className={`mt-1 ${field}`}
-                />
-              </label>
-            )}
-          </fieldset>
+          {onTab ? (
+            <p className="rounded-xl bg-zinc-50 p-3 text-sm text-zinc-600">
+              <strong>Pagamento na comanda</strong>, no fechamento da conta.
+            </p>
+          ) : (
+            <fieldset>
+              <legend className="font-semibold text-zinc-900">Pagamento</legend>
+              <div className="mt-2 grid grid-cols-3 gap-2">
+                {PAYMENTS.map((p) => (
+                  <button
+                    key={p.key}
+                    type="button"
+                    aria-pressed={payment === p.key}
+                    onClick={() => setPayment(p.key)}
+                    className={`h-11 rounded-xl border text-sm font-semibold ${
+                      payment === p.key
+                        ? "border-zinc-900 bg-zinc-900 text-white"
+                        : "border-zinc-300 text-zinc-700"
+                    }`}
+                  >
+                    {p.label}
+                  </button>
+                ))}
+              </div>
+              {payment === "DINHEIRO" && (
+                <label className="mt-3 block">
+                  <span className="text-sm text-zinc-700">
+                    Troco para (opcional)
+                  </span>
+                  <input
+                    value={change}
+                    inputMode="numeric"
+                    onChange={(e) => setChange(maskMoney(e.target.value).text)}
+                    placeholder="Sem troco"
+                    className={`mt-1 ${field}`}
+                  />
+                </label>
+              )}
+            </fieldset>
+          )}
 
           <label className="block">
             <span className="font-semibold text-zinc-900">
@@ -695,8 +845,15 @@ function NewOrderForm({
               Resumo ·{" "}
               {orderTypeLongLabel({
                 deliveryType: type,
-                tableLabel: table.trim() || null,
+                tableLabel: onTab
+                  ? preview?.tab?.label ??
+                    (localMode === "nova"
+                      ? newTabLabel.trim()
+                      : chosenTab?.label) ??
+                    null
+                  : table.trim() || null,
               })}
+              {onTab && " · na comanda"}
             </p>
             {previewing && (
               <p className="mt-1 flex items-center gap-1 text-zinc-500">
@@ -739,7 +896,13 @@ function NewOrderForm({
               </dl>
             )}
             {!body && (
-              <p className="mt-1 text-zinc-500">Adicione pelo menos um item.</p>
+              <p className="mt-1 text-zinc-500">
+                {lines.length === 0
+                  ? "Adicione pelo menos um item."
+                  : localMode === "aberta"
+                    ? "Escolha a comanda."
+                    : "Informe a identificação da comanda."}
+              </p>
             )}
           </div>
 
@@ -758,7 +921,7 @@ function NewOrderForm({
             className="hidden h-12 w-full items-center justify-center gap-2 rounded-xl bg-emerald-600 font-semibold text-white disabled:opacity-50 lg:flex"
           >
             {submitting && <Loader2 className="size-5 animate-spin" />}
-            Confirmar pedido
+            {onTab ? "Lançar na comanda" : "Confirmar pedido"}
             {preview ? ` · ${formatBRL(preview.totalCents)}` : ""}
           </button>
         </section>
@@ -782,7 +945,7 @@ function NewOrderForm({
             className="flex h-12 shrink-0 items-center justify-center gap-2 rounded-xl bg-emerald-600 px-5 font-semibold text-white disabled:opacity-50"
           >
             {submitting && <Loader2 className="size-5 animate-spin" />}
-            Confirmar pedido
+            {onTab ? "Lançar na comanda" : "Confirmar pedido"}
           </button>
         </div>
       </div>

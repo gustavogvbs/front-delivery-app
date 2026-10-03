@@ -39,6 +39,10 @@ export interface PanelTenant {
   printPaperWidth: 58 | 80;
   printKitchenCopy: boolean;
   printDeliveryCopy: boolean;
+  /** taxa de serviço das comandas (opcional para o cliente) */
+  serviceFeeEnabled: boolean;
+  /** pontos-base: 1000 = 10% */
+  serviceFeeBps: number;
   openingMode: OpeningMode;
   timeZone: string;
   openingHours: OpeningInterval[];
@@ -93,6 +97,8 @@ export type SettingsPatch = Partial<{
   printPaperWidth: 58 | 80;
   printKitchenCopy: boolean;
   printDeliveryCopy: boolean;
+  serviceFeeEnabled: boolean;
+  serviceFeeBps: number;
 }>;
 
 export interface PanelProduct {
@@ -130,7 +136,10 @@ export interface PanelOrderSummary {
   source: OrderSource;
   deliveryType: OrderType;
   tableLabel: string | null;
-  paymentMethod: PaymentMethod;
+  /** comanda do pedido (pagamento na comanda) */
+  tab: { id: string; label: string } | null;
+  /** null = pedido de comanda (pago no fechamento da comanda) */
+  paymentMethod: PaymentMethod | null;
   totalCents: number;
   deliveryFeePending: boolean;
   itemsCount: number;
@@ -173,6 +182,7 @@ export interface PanelOrder {
   source: OrderSource;
   deliveryType: OrderType;
   tableLabel: string | null;
+  tab: { id: string; label: string; status: TabStatus } | null;
   address: {
     cep: string | null;
     street: string | null;
@@ -187,7 +197,8 @@ export interface PanelOrder {
   distanceMeters: number | null;
   deliveryFeeCents: number | null;
   deliveryFeePending: boolean;
-  paymentMethod: PaymentMethod;
+  /** null = pedido de comanda (pago no fechamento da comanda) */
+  paymentMethod: PaymentMethod | null;
   changeForCents: number | null;
   notes: string | null;
   items: PanelOrderItem[];
@@ -239,9 +250,14 @@ export interface ManualOrderBody {
   };
   location?: LatLng;
   deliveryFeeCents?: number;
-  paymentMethod: PaymentMethod;
+  /** fora de comanda; pedido de comanda é pago no fechamento */
+  paymentMethod?: PaymentMethod;
   changeForCents?: number;
   notes?: string;
+  /** lança numa comanda aberta */
+  tabId?: string;
+  /** abre a comanda junto com o pedido (mesma operação) */
+  newTabLabel?: string;
   items: { productId: string; quantity: number; notes?: string }[];
 }
 
@@ -261,4 +277,80 @@ export interface ManualOrderPreview {
   totalCents: number;
   storeOpen: boolean;
   openLabel: string;
+  /** comanda do pedido (id null = será aberta junto com o pedido) */
+  tab: { id: string | null; label: string } | null;
+}
+
+// ── comandas (mesas) ──
+
+export type TabStatus = "ABERTA" | "FECHADA" | "CANCELADA";
+
+export interface TabClosing {
+  subtotalCents: number;
+  serviceFeeBps: number;
+  serviceFeeCents: number;
+  totalCents: number;
+  paymentMethod: PaymentMethod;
+  changeForCents: number | null;
+}
+
+/** GET /tenant/me/tabs (cartões das abertas e histórico). */
+export interface TabSummary {
+  id: string;
+  label: string;
+  status: TabStatus;
+  openedAt: string;
+  openedBy: string | null;
+  closedAt: string | null;
+  closedBy: string | null;
+  canceledAt: string | null;
+  canceledBy: string | null;
+  cancelReason: string | null;
+  /** snapshot do fechamento (só FECHADA) */
+  closing: TabClosing | null;
+  ordersCount: number;
+  /** consumido até agora (pedidos válidos, sem taxa) */
+  consumedCents: number;
+}
+
+export interface TabOrder {
+  id: string;
+  number: number;
+  status: OrderStatus;
+  createdAt: string;
+  notes: string | null;
+  totalCents: number;
+  /** cancelados e recusados ficam fora do total */
+  countsInTotal: boolean;
+  items: {
+    id: string;
+    productName: string;
+    unitPriceCents: number;
+    quantity: number;
+    notes: string | null;
+    totalCents: number;
+  }[];
+}
+
+export interface TabTotals {
+  validOrders: number;
+  subtotalCents: number;
+  serviceFeeBps: number;
+  serviceFeeCents: number;
+  totalCents: number;
+}
+
+/** GET /tenant/me/tabs/:id */
+export interface TabDetail
+  extends Omit<TabSummary, "ordersCount" | "consumedCents"> {
+  orders: TabOrder[];
+  serviceFee: { enabled: boolean; bps: number; label: string };
+  /** prévia com a taxa da loja (se ligada); fechada: use closing */
+  preview: TabTotals;
+}
+
+export interface CloseTabBody {
+  paymentMethod: PaymentMethod;
+  changeForCents?: number;
+  applyServiceFee?: boolean;
 }

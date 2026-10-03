@@ -8,7 +8,7 @@ import { orderTypeLabel } from "@/lib/order-lines";
 import {
   ago,
   dateTimeShort,
-  PAYMENT_LABEL,
+  paymentText,
   STATUS_CLASS,
   STATUS_LABEL,
   timeHM,
@@ -26,11 +26,11 @@ import {
 
 type Tab = "andamento" | "finalizados";
 
+// Balcão saiu dos filtros (Etapa 3); pedidos antigos de balcão aparecem em "Todos"
 const TYPE_FILTERS: { key: OrderType | "TODOS"; label: string }[] = [
   { key: "TODOS", label: "Todos" },
   { key: "ENTREGA", label: "Entrega" },
   { key: "RETIRADA", label: "Retirada" },
-  { key: "BALCAO", label: "Balcão" },
   { key: "CONSUMO_LOCAL", label: "Local" },
 ];
 
@@ -57,7 +57,7 @@ export function OrdersBoard() {
         className="mb-3 flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-zinc-900 font-semibold text-white"
       >
         <Plus className="size-5" />
-        Novo pedido (balcão, mesa, telefone)
+        Novo pedido (mesa, retirada, telefone)
       </Link>
       <div
         role="tablist"
@@ -255,7 +255,7 @@ function OrderCard({
             </span>
           </p>
           <p className="text-sm text-zinc-600">
-            {PAYMENT_LABEL[order.paymentMethod]} · {order.itemsCount}{" "}
+            {paymentText(order.paymentMethod)} · {order.itemsCount}{" "}
             {order.itemsCount === 1 ? "item" : "itens"}
           </p>
         </div>

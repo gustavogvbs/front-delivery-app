@@ -89,7 +89,11 @@ function EditForm({
   const [lines, setLines] = useState<Line[]>(() => fromOrder(order));
   const [notes, setNotes] = useState(order.notes ?? "");
   const [fee, setFee] = useState(moneyText(order.deliveryFeeCents));
-  const [payment, setPayment] = useState<PaymentMethod>(order.paymentMethod);
+  const [payment, setPayment] = useState<PaymentMethod>(
+    order.paymentMethod ?? "DINHEIRO",
+  );
+  // pedido de comanda: o pagamento é feito no fechamento da comanda
+  const onTab = order.tab !== null;
   const [change, setChange] = useState(moneyText(order.changeForCents));
   const [adding, setAdding] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -176,8 +180,13 @@ function EditForm({
             },
       ),
       notes: notes.trim() || null,
-      paymentMethod: payment,
-      changeForCents: payment === "DINHEIRO" ? maskMoney(change).cents : null,
+      ...(onTab
+        ? {}
+        : {
+            paymentMethod: payment,
+            changeForCents:
+              payment === "DINHEIRO" ? maskMoney(change).cents : null,
+          }),
     };
     // taxa: só em entrega; vazio mantém como está (inclusive "a combinar")
     const feeCents = maskMoney(fee).cents;
@@ -325,38 +334,47 @@ function EditForm({
         </label>
       )}
 
-      <fieldset>
-        <legend className="font-semibold text-zinc-900">Pagamento</legend>
-        <div className="mt-2 grid grid-cols-3 gap-2">
-          {(["PIX", "DINHEIRO", "CARTAO"] as const).map((m) => (
-            <button
-              key={m}
-              type="button"
-              aria-pressed={payment === m}
-              onClick={() => setPayment(m)}
-              className={`h-11 rounded-xl border text-sm font-semibold ${
-                payment === m
-                  ? "border-zinc-900 bg-zinc-900 text-white"
-                  : "border-zinc-300 text-zinc-700"
-              }`}
-            >
-              {m === "CARTAO" ? "Cartão" : PAYMENT_LABEL[m]}
-            </button>
-          ))}
-        </div>
-        {payment === "DINHEIRO" && (
-          <label className="mt-3 block">
-            <span className="text-sm text-zinc-700">Troco para (opcional)</span>
-            <input
-              inputMode="numeric"
-              value={change}
-              onChange={(e) => setChange(maskMoney(e.target.value).text)}
-              placeholder="Sem troco"
-              className="mt-1 h-12 w-full rounded-xl border border-zinc-300 px-3 text-base tabular-nums"
-            />
-          </label>
-        )}
-      </fieldset>
+      {onTab ? (
+        <p className="rounded-xl bg-zinc-50 p-3 text-sm text-zinc-600">
+          Pagamento na comanda <strong>{order.tab!.label}</strong>, no
+          fechamento da conta.
+        </p>
+      ) : (
+        <fieldset>
+          <legend className="font-semibold text-zinc-900">Pagamento</legend>
+          <div className="mt-2 grid grid-cols-3 gap-2">
+            {(["PIX", "DINHEIRO", "CARTAO"] as const).map((m) => (
+              <button
+                key={m}
+                type="button"
+                aria-pressed={payment === m}
+                onClick={() => setPayment(m)}
+                className={`h-11 rounded-xl border text-sm font-semibold ${
+                  payment === m
+                    ? "border-zinc-900 bg-zinc-900 text-white"
+                    : "border-zinc-300 text-zinc-700"
+                }`}
+              >
+                {m === "CARTAO" ? "Cartão" : PAYMENT_LABEL[m]}
+              </button>
+            ))}
+          </div>
+          {payment === "DINHEIRO" && (
+            <label className="mt-3 block">
+              <span className="text-sm text-zinc-700">
+                Troco para (opcional)
+              </span>
+              <input
+                inputMode="numeric"
+                value={change}
+                onChange={(e) => setChange(maskMoney(e.target.value).text)}
+                placeholder="Sem troco"
+                className="mt-1 h-12 w-full rounded-xl border border-zinc-300 px-3 text-base tabular-nums"
+              />
+            </label>
+          )}
+        </fieldset>
+      )}
 
       {error && (
         <p

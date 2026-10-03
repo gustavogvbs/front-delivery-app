@@ -26,6 +26,7 @@ function sampleOrder(): PanelOrder {
     source: "MANUAL",
     deliveryType: "ENTREGA",
     tableLabel: null,
+    tab: null,
     address: {
       cep: "18030000",
       street: "Rua de Teste",
@@ -132,7 +133,7 @@ export function PrintView({ id }: { id: string }) {
       {!embed && (
         <div className="no-print mx-auto mb-4 flex max-w-md flex-wrap items-center gap-2 p-3 text-sm">
           <Link
-            href={isSample ? "/painel/loja" : `/painel/pedidos/${id}`}
+            href={isSample ? "/painel/loja/impressao" : `/painel/pedidos/${id}`}
             className="h-11 rounded-xl border border-zinc-300 px-3 leading-[2.75rem]"
           >
             Voltar

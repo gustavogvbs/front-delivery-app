@@ -5,7 +5,9 @@ import { withWakeRetry } from "@/lib/wake";
 import {
   getPanelOrder,
   getPanelTenant,
+  getTab,
   listOrders,
+  listTabs,
   clearOpenState,
   listPanelCategories,
   setOpenState,
@@ -24,6 +26,11 @@ export const panelKeys = {
   finished: ["panel", "orders", "finished"] as const,
   order: (id: string) => ["panel", "order", id] as const,
   catalog: ["panel", "categories"] as const,
+  tabs: ["panel", "tabs"] as const,
+  openTabs: ["panel", "tabs", "open"] as const,
+  tabHistory: (from: string, to: string) =>
+    ["panel", "tabs", "history", from, to] as const,
+  tab: (id: string) => ["panel", "tabs", "detail", id] as const,
 };
 
 export function usePanelTenant() {
@@ -133,6 +140,44 @@ export function useCatalog() {
     queryKey: panelKeys.catalog,
     queryFn: () => withWakeRetry(listPanelCategories),
     staleTime: 30_000,
+    retry: false,
+  });
+}
+
+/** Comandas abertas (aba Mesas e "Novo pedido"). Atualiza a cada 20 s. */
+export function useOpenTabs(enabled = true) {
+  return useQuery({
+    queryKey: panelKeys.openTabs,
+    queryFn: () => withWakeRetry(() => listTabs()),
+    enabled,
+    refetchInterval: POLL_MS,
+    refetchIntervalInBackground: false,
+    refetchOnWindowFocus: true,
+    staleTime: 0,
+    retry: false,
+  });
+}
+
+/** Histórico (fechadas e canceladas) entre duas datas (AAAA-MM-DD, fuso da loja). */
+export function useTabHistory(from: string, to: string, enabled: boolean) {
+  return useQuery({
+    queryKey: panelKeys.tabHistory(from, to),
+    queryFn: () =>
+      withWakeRetry(() => listTabs({ status: "FECHADA,CANCELADA", from, to })),
+    enabled,
+    staleTime: 0,
+    retry: false,
+  });
+}
+
+export function useTab(id: string) {
+  return useQuery({
+    queryKey: panelKeys.tab(id),
+    queryFn: () => withWakeRetry(() => getTab(id)),
+    enabled: id !== "",
+    refetchInterval: POLL_MS,
+    refetchIntervalInBackground: false,
+    staleTime: 0,
     retry: false,
   });
 }
