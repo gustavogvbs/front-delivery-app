@@ -16,7 +16,7 @@ import {
   STATUS_CLASS,
   STATUS_LABEL,
 } from "@/lib/panel-format";
-import { autoPrint, copiesFor, readAutoPrint } from "@/lib/print";
+import { autoPrint } from "@/lib/print";
 import { runOrderAction } from "@/services/panel-api";
 import type { OrderAction, PanelOrder } from "@/types/panel";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
@@ -86,9 +86,9 @@ export function OrderDetail({ id }: { id: string }) {
       toast.success(DONE_TOAST[vars.action]);
       // impressão automática ao aceitar (só se ligada NESTE aparelho)
       if (vars.action === "accept" && tenant.data) {
-        autoPrint(tenant.data, data.id, "accept");
-        if (readAutoPrint("accept") && copiesFor(tenant.data))
-          markPrinted(data.id);
+        void autoPrint(tenant.data, data.id, "accept").then(
+          (ok) => ok && markPrinted(data.id),
+        );
       }
       setConfirm(null);
       setReason("");

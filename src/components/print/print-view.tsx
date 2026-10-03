@@ -6,6 +6,7 @@ import { useEffect, useRef, useState } from "react";
 
 import { usePanelOrder, usePanelTenant } from "@/components/panel/use-panel";
 import type { PrintCopy } from "@/lib/print";
+import { markPrintReady } from "@/lib/print-ready";
 import type { PanelOrder } from "@/types/panel";
 
 import { OrderTicket, ticketCss } from "./order-ticket";
@@ -106,6 +107,7 @@ export function PrintView({ id }: { id: string }) {
     const px = ticketRef.current.getBoundingClientRect().height;
     const mm = Math.ceil((px * 25.4) / 96) + 4;
     setPageCss(`@page { size: ${width}mm ${mm}mm; margin: 0; }`);
+    markPrintReady(width, mm);
   }, [ready, width, copy, order]);
 
   // embutida: imprime quando estiver pronta e avisa o painel

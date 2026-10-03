@@ -10,8 +10,13 @@ import { Printer } from "lucide-react";
 import { toast } from "sonner";
 
 const printedKey = (id: string) => `printed:${id}`;
-export const markPrinted = (id: string) =>
+const PRINTED_EVENT = "panel:printed";
+
+/** Marca o pedido como impresso e avisa os botões já na tela (ex.: impressão automática ao aceitar). */
+export function markPrinted(id: string) {
   writeText("session", printedKey(id), "1");
+  window.dispatchEvent(new CustomEvent(PRINTED_EVENT, { detail: id }));
+}
 
 /**
  * "Já impresso" deste pedido (nesta sessão do navegador): a mesma marca vale
@@ -22,11 +27,13 @@ export function usePrintedMark(orderId: string) {
   // lido depois de montar (o servidor não tem sessionStorage)
   useEffect(() => {
     setPrinted(readText("session", printedKey(orderId)) === "1");
+    const onPrinted = (e: Event) => {
+      if ((e as CustomEvent<string>).detail === orderId) setPrinted(true);
+    };
+    window.addEventListener(PRINTED_EVENT, onPrinted);
+    return () => window.removeEventListener(PRINTED_EVENT, onPrinted);
   }, [orderId]);
-  const mark = () => {
-    markPrinted(orderId);
-    setPrinted(true);
-  };
+  const mark = () => markPrinted(orderId);
   return { printed, mark };
 }
 
@@ -46,10 +53,12 @@ export function QuickKitchenPrint({
     <button
       type="button"
       onClick={() => {
-        printOrder(orderId, "cozinha");
-        mark();
-        toast.success(`Enviado para impressão · #${number}`, {
-          description: "Via da cozinha",
+        void printOrder(orderId, "cozinha").then((ok) => {
+          if (!ok) return; // o erro já virou aviso
+          mark();
+          toast.success(`Enviado para impressão · #${number}`, {
+            description: "Via da cozinha",
+          });
         });
       }}
       aria-label={`${printed ? "Reimprimir" : "Imprimir"} via da cozinha do pedido #${number}`}
@@ -81,9 +90,8 @@ export function PrintButton({
   const standard = copiesFor(tenant);
 
   const print = (copy: PrintCopy) => {
-    printOrder(orderId, copy);
-    mark();
     setOpen(false);
+    void printOrder(orderId, copy).then((ok) => ok && mark());
   };
 
   return (

@@ -262,7 +262,7 @@ export function TabDetail({ id }: { id: string }) {
           {tab.status !== "CANCELADA" && tab.orders.length > 0 && (
             <button
               type="button"
-              onClick={() => printPreBill(tab.id)}
+              onClick={() => void printPreBill(tab.id)}
               className="flex h-12 w-full items-center justify-center gap-2 rounded-xl border border-zinc-300 bg-white font-semibold text-zinc-800"
             >
               <Printer className="size-5" />
