@@ -1,5 +1,6 @@
 "use client";
 
+import { getDesktop } from "@/lib/desktop";
 import { isApiError } from "@/lib/http";
 import { withWakeRetry } from "@/lib/wake";
 import {
@@ -15,6 +16,14 @@ import {
 import type { PanelOrderSummary } from "@/types/panel";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
+
+/**
+ * No app desktop, o painel fica o dia todo minimizado ou na bandeja: o estado
+ * da loja, os pedidos em andamento e as comandas abertas continuam atualizando
+ * (som, notificação e impressão automática dependem disso). No navegador
+ * comum, a atualização pausa com a aba oculta, como sempre.
+ */
+const keepPollingHidden = () => getDesktop() !== null;
 
 /** Intervalo da atualização automática da lista (pausa com a aba oculta). */
 export const POLL_MS = 20_000;
@@ -40,7 +49,7 @@ export function usePanelTenant() {
     staleTime: 60_000,
     // o estado aberto/fechado muda sozinho no modo automático
     refetchInterval: 60_000,
-    refetchIntervalInBackground: false,
+    refetchIntervalInBackground: keepPollingHidden(),
     retry: false,
   });
 }
@@ -58,7 +67,7 @@ export function useActiveOrders() {
     queryKey: panelKeys.active,
     queryFn: () => withWakeRetry(() => listOrders(["PENDENTE", "ACEITO"], 100)),
     refetchInterval: POLL_MS,
-    refetchIntervalInBackground: false,
+    refetchIntervalInBackground: keepPollingHidden(),
     refetchOnWindowFocus: true,
     staleTime: 0,
     retry: false,
@@ -151,7 +160,7 @@ export function useOpenTabs(enabled = true) {
     queryFn: () => withWakeRetry(() => listTabs()),
     enabled,
     refetchInterval: POLL_MS,
-    refetchIntervalInBackground: false,
+    refetchIntervalInBackground: keepPollingHidden(),
     refetchOnWindowFocus: true,
     staleTime: 0,
     retry: false,

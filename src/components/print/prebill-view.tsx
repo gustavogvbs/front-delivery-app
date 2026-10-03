@@ -8,6 +8,7 @@ import { OrderItemLine } from "@/components/orders/order-item-line";
 import { usePanelTenant, useTab } from "@/components/panel/use-panel";
 import { formatBRL } from "@/lib/format";
 import { dateTimeShort, PAYMENT_LABEL, timeHM } from "@/lib/panel-format";
+import { markPrintReady } from "@/lib/print-ready";
 import { bpsText } from "@/lib/service-fee";
 import type { TabDetail } from "@/types/panel";
 
@@ -34,6 +35,7 @@ export function PreBillView({ id }: { id: string }) {
     const px = ticketRef.current.getBoundingClientRect().height;
     const mm = Math.ceil((px * 25.4) / 96) + 4;
     setPageCss(`@page { size: ${width}mm ${mm}mm; margin: 0; }`);
+    markPrintReady(width, mm);
   }, [ready, width, tab]);
 
   const printed = useRef(false);

@@ -14,6 +14,7 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { Sheet, SheetContent } from "@/components/ui/sheet";
+import { getDesktop, useDesktopUpdate, useIsDesktop } from "@/lib/desktop";
 import { isApiError } from "@/lib/http";
 import { useNewPendingOrders, useOrderSound } from "@/lib/order-alerts";
 import { readText, writeText } from "@/lib/storage";
@@ -31,6 +32,7 @@ import {
   PanelLeftClose,
   PanelLeftOpen,
   Plus,
+  RefreshCw,
 } from "lucide-react";
 import { toast } from "sonner";
 
@@ -67,6 +69,10 @@ export function PanelShell({ children }: { children: React.ReactNode }) {
   const [leaving, setLeaving] = useState(false);
   const [collapsed, setCollapsed] = useState(false);
   const [more, setMore] = useState(false);
+  // no app desktop o áudio já é liberado (sem "toque para liberar o som")
+  const isDesktop = useIsDesktop();
+  // app desktop: atualização baixada (aviso discreto; reiniciar é escolha do atendente)
+  const desktopUpdate = useDesktopUpdate();
 
   useEffect(() => {
     setCollapsed(readText("local", SIDEBAR_KEY) === "collapsed");
@@ -96,12 +102,27 @@ export function PanelShell({ children }: { children: React.ReactNode }) {
 
   useNewPendingOrders(pendingOnline, (fresh) => {
     sound.play();
+    // app desktop: notificação do Windows (o app só mostra com a janela oculta)
+    const desktop = getDesktop();
+    for (const o of fresh)
+      desktop?.notificarPedidoNovo({ id: o.id, numero: o.number });
     const numbers = fresh.map((o) => `#${o.number}`).join(", ");
     toast.info(
       fresh.length > 1 ? `Novos pedidos: ${numbers}` : `Novo pedido ${numbers}`,
       { description: fresh.map((o) => o.customerName).join(", ") },
     );
   });
+
+  // app desktop: estado para a atualização automática, que só reinicia o app
+  // com a loja FECHADA e nenhum pedido em andamento (pendente ou aceito)
+  const lojaAberta = tenant.data?.isOpen;
+  const emAndamento = active.data
+    ? active.data.pending.length + active.data.accepted.length
+    : undefined;
+  useEffect(() => {
+    if (lojaAberta === undefined || emAndamento === undefined) return;
+    getDesktop()?.informarEstado({ lojaAberta, pendentes: emAndamento });
+  }, [lojaAberta, emAndamento, active.dataUpdatedAt]);
 
   const doLogout = async () => {
     setLeaving(true);
@@ -255,6 +276,18 @@ export function PanelShell({ children }: { children: React.ReactNode }) {
                 {sound.enabled ? "Som ligado" : "Som desligado"}
               </span>
             </button>
+            {desktopUpdate && (
+              <button
+                type="button"
+                onClick={() => getDesktop()?.reiniciarParaAtualizar?.()}
+                title="Atualização do app pronta. Reinicia o app (leva alguns segundos)."
+                className="hidden h-11 shrink-0 items-center gap-1.5 rounded-full border border-emerald-300 bg-emerald-50 px-3 text-sm font-medium text-emerald-800 md:flex"
+                data-testid="desktop-update"
+              >
+                <RefreshCw className="size-4" />
+                Atualização pronta — reiniciar agora
+              </button>
+            )}
             {tenant.data && (
               <AccountMenu
                 tenant={tenant.data}
@@ -263,7 +296,7 @@ export function PanelShell({ children }: { children: React.ReactNode }) {
               />
             )}
           </div>
-          {sound.enabled && sound.blocked && (
+          {sound.enabled && sound.blocked && !isDesktop && (
             <p className="bg-amber-50 px-4 py-2 text-center text-xs text-amber-900">
               Toque em qualquer lugar da tela para liberar o som dos avisos.
             </p>

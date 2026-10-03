@@ -3,6 +3,7 @@
 import dynamic from "next/dynamic";
 import { useCallback, useState } from "react";
 
+import { useIsDesktop } from "@/lib/desktop";
 import type { LatLng } from "@/types/api";
 import { Crosshair, Loader2, MapPin } from "lucide-react";
 
@@ -53,6 +54,9 @@ export function LocationPicker({
   const [locating, setLocating] = useState(false);
   const [geoError, setGeoError] = useState<string | null>(null);
   const [localKey, setLocalKey] = useState(0);
+  // no app desktop a geolocalização fica negada (no Electron ela depende de
+  // chave do Google): só o pino por toque no mapa
+  const isDesktop = useIsDesktop();
 
   const place = useCallback(
     (p: LatLng) => {
@@ -101,19 +105,21 @@ export function LocationPicker({
           ? "Confira o pino: arraste ou toque no mapa para ajustar."
           : `Toque no mapa no local ${placeLabel} para posicionar o pino.`}
       </p>
-      <button
-        type="button"
-        onClick={useMyLocation}
-        disabled={locating}
-        className="flex h-12 w-full items-center justify-center gap-2 rounded-xl border border-zinc-300 bg-white font-semibold text-zinc-800 disabled:opacity-60"
-      >
-        {locating ? (
-          <Loader2 className="size-5 animate-spin" />
-        ) : (
-          <Crosshair className="size-5" />
-        )}
-        {locating ? "Obtendo localização…" : "Usar minha localização"}
-      </button>
+      {!isDesktop && (
+        <button
+          type="button"
+          onClick={useMyLocation}
+          disabled={locating}
+          className="flex h-12 w-full items-center justify-center gap-2 rounded-xl border border-zinc-300 bg-white font-semibold text-zinc-800 disabled:opacity-60"
+        >
+          {locating ? (
+            <Loader2 className="size-5 animate-spin" />
+          ) : (
+            <Crosshair className="size-5" />
+          )}
+          {locating ? "Obtendo localização…" : "Usar minha localização"}
+        </button>
+      )}
       {geoError && (
         <p
           role="alert"

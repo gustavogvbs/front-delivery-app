@@ -1,5 +1,6 @@
 "use client";
 
+import { getDesktop, useIsDesktop } from "@/lib/desktop";
 import { isApiError } from "@/lib/http";
 import { copiesFor, printOrder, useAutoPrintPrefs } from "@/lib/print";
 import { updateSettings } from "@/services/panel-api";
@@ -32,6 +33,7 @@ export function PrintSettings({ tenant }: { tenant: PanelTenant }) {
       ),
   });
   const noCopy = copiesFor(tenant) === null;
+  const isDesktop = useIsDesktop();
   const autoOn = prefs.accept || prefs.manual;
 
   return (
@@ -40,6 +42,28 @@ export function PrintSettings({ tenant }: { tenant: PanelTenant }) {
       description="Impressora térmica de 58 ou 80 mm, configurada como impressora padrão do computador."
     >
       <div className="space-y-4">
+        {isDesktop && (
+          <div
+            className="space-y-2 rounded-xl border-2 border-zinc-900 p-3"
+            data-testid="desktop-printer"
+          >
+            <p className="text-sm font-semibold text-zinc-900">
+              Impressora deste computador (app Boa Pedida)
+            </p>
+            <p className="text-xs text-zinc-600">
+              Neste computador quem imprime é o app, sem a janela de impressão.
+              A impressora e o número de cópias ficam nas configurações do app;
+              a largura e as vias continuam sendo as da loja, abaixo.
+            </p>
+            <button
+              type="button"
+              onClick={() => getDesktop()?.abrirConfiguracoes()}
+              className="h-11 w-full rounded-xl bg-zinc-900 text-sm font-semibold text-white"
+            >
+              Configurações do app (impressora e cópias)
+            </button>
+          </div>
+        )}
         <fieldset disabled={save.isPending}>
           <legend className="text-sm font-medium text-zinc-700">
             Largura da bobina (vale para todos os aparelhos)
@@ -140,7 +164,7 @@ export function PrintSettings({ tenant }: { tenant: PanelTenant }) {
 
         <button
           type="button"
-          onClick={() => printOrder("teste", copiesFor(tenant) ?? "ambas")}
+          onClick={() => void printOrder("teste", copiesFor(tenant) ?? "ambas")}
           className="flex h-12 w-full items-center justify-center gap-2 rounded-xl border border-zinc-300 font-semibold text-zinc-800"
         >
           {save.isPending ? (

@@ -330,7 +330,7 @@ function NewOrderForm({
       void qc.invalidateQueries({ queryKey: panelKeys.orders });
       qc.setQueryData(panelKeys.order(order.id), order);
       // impressão automática ao registrar (só se ligada NESTE aparelho)
-      autoPrint(tenant, order.id, "manual");
+      void autoPrint(tenant, order.id, "manual");
       if (order.tab) {
         // pedido de comanda: volta para a comanda
         void qc.invalidateQueries({ queryKey: panelKeys.tabs });
