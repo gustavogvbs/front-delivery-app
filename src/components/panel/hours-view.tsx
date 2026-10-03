@@ -19,7 +19,8 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Copy, Loader2, Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 
-import { OpenControl } from "./open-control";
+import { OpenStatusLine } from "./open-control";
+import { PanelPage } from "./panel-page";
 import { Card } from "./settings-view";
 import { StoreSections } from "./store-sections";
 import { panelKeys, usePanelTenant } from "./use-panel";
@@ -35,9 +36,9 @@ export function HoursView() {
     );
   }
   return (
-    <main className="mx-auto max-w-3xl space-y-4 px-4 pb-16 pt-4">
+    <PanelPage width="read" className="space-y-4">
       <StoreSections />
-      <OpenControl tenant={tenant.data} variant="card" />
+      <OpenStatusLine tenant={tenant.data} />
       {/* key: o formulário recomeça do que está salvo depois de salvar */}
       <HoursForm
         key={JSON.stringify([
@@ -47,7 +48,7 @@ export function HoursView() {
         ])}
         tenant={tenant.data}
       />
-    </main>
+    </PanelPage>
   );
 }
 
