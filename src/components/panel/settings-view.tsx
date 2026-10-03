@@ -21,7 +21,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { ExternalLink, Eye, EyeOff, ImageUp, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 
-import { OpenControl } from "./open-control";
+import { PanelPage } from "./panel-page";
 import { ServiceFeeSettings } from "./service-fee-settings";
 import { StoreSections } from "./store-sections";
 import { panelKeys, usePanelTenant } from "./use-panel";
@@ -37,7 +37,7 @@ export function SettingsView() {
     );
   }
   return (
-    <main className="mx-auto max-w-3xl space-y-4 px-4 pb-16 pt-4">
+    <PanelPage width="read" className="space-y-4">
       <StoreSections />
       <OpenCard tenant={tenant.data} />
       <LogoCard tenant={tenant.data} />
@@ -48,7 +48,7 @@ export function SettingsView() {
       />
       <ServiceFeeSettings tenant={tenant.data} />
       <PasswordForm />
-    </main>
+    </PanelPage>
   );
 }
 
@@ -104,10 +104,10 @@ export function Field({
 export const inputClass =
   "h-12 w-full rounded-xl border border-zinc-300 bg-white px-3 text-base outline-none focus:border-zinc-900";
 
+/** Link do cardápio e aviso de aprovação (abrir/fechar fica no topo do painel). */
 function OpenCard({ tenant }: { tenant: PanelTenant }) {
   return (
     <div className="space-y-2">
-      <OpenControl tenant={tenant} variant="card" />
       {!tenant.approved && (
         <p className="text-sm text-amber-800">
           Sua loja ainda não foi aprovada: o cardápio não aparece para os

@@ -34,6 +34,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { ArrowLeft, Loader2, Search, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 
+import { ActionBar, PanelPage } from "./panel-page";
 import {
   panelKeys,
   useCatalog,
@@ -362,7 +363,7 @@ function NewOrderForm({
     "h-12 w-full rounded-xl border border-zinc-300 bg-white px-3 text-base outline-none focus:border-zinc-900";
 
   return (
-    <main className="mx-auto max-w-6xl px-4 pb-36 pt-3 lg:pb-10">
+    <PanelPage width="wide" className="pb-36 lg:pb-16">
       <div className="mb-3 flex items-center gap-2">
         <Link
           href={presetTab ? `/painel/mesas/${presetTab}` : "/painel"}
@@ -384,7 +385,7 @@ function NewOrderForm({
         </p>
       )}
 
-      <div className="gap-6 lg:grid lg:grid-cols-[1fr_420px] lg:items-start">
+      <div className="gap-6 lg:grid lg:grid-cols-[minmax(0,1fr)_420px] lg:items-start">
         {/* ── produtos ── */}
         <section aria-label="Produtos">
           <label className="relative block">
@@ -414,7 +415,7 @@ function NewOrderForm({
               </button>
             ))}
           </div>
-          <ul className="mt-3 grid gap-2 sm:grid-cols-2">
+          <ul className="mt-3 grid gap-2 sm:grid-cols-2 2xl:grid-cols-3">
             {products.map((p) => (
               <li key={p.id}>
                 <button
@@ -450,7 +451,7 @@ function NewOrderForm({
         <section
           id="pedido"
           aria-label="Pedido"
-          className="mt-6 space-y-4 rounded-2xl bg-white p-4 shadow-sm lg:sticky lg:top-32 lg:mt-0 lg:max-h-[calc(100dvh-9rem)] lg:overflow-y-auto"
+          className="mt-6 space-y-4 rounded-2xl bg-white p-4 shadow-sm lg:sticky lg:top-24 lg:mt-0 lg:max-h-[calc(100dvh-7.5rem)] lg:overflow-y-auto"
         >
           <div>
             <h2 className="text-lg font-semibold text-zinc-900">Itens</h2>
@@ -928,27 +929,25 @@ function NewOrderForm({
       </div>
 
       {/* celular/tablet: barra fixa com o total e o botão */}
-      <div className="fixed inset-x-0 bottom-0 z-30 border-t bg-white px-4 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-3 lg:hidden">
-        <div className="mx-auto flex max-w-3xl items-center gap-3">
-          <a href="#pedido" className="min-w-0 flex-1 text-sm text-zinc-700">
-            <span className="block font-semibold">
-              {itemsCount} {itemsCount === 1 ? "item" : "itens"}
-            </span>
-            <span className="block tabular-nums">
-              {preview ? formatBRL(preview.totalCents) : "—"}
-            </span>
-          </a>
-          <button
-            type="button"
-            onClick={confirm}
-            disabled={!ready || submitting}
-            className="flex h-12 shrink-0 items-center justify-center gap-2 rounded-xl bg-emerald-600 px-5 font-semibold text-white disabled:opacity-50"
-          >
-            {submitting && <Loader2 className="size-5 animate-spin" />}
-            {onTab ? "Lançar na comanda" : "Confirmar pedido"}
-          </button>
-        </div>
-      </div>
-    </main>
+      <ActionBar className="lg:hidden" innerClassName="flex items-center gap-3">
+        <a href="#pedido" className="min-w-0 flex-1 text-sm text-zinc-700">
+          <span className="block font-semibold">
+            {itemsCount} {itemsCount === 1 ? "item" : "itens"}
+          </span>
+          <span className="block tabular-nums">
+            {preview ? formatBRL(preview.totalCents) : "—"}
+          </span>
+        </a>
+        <button
+          type="button"
+          onClick={confirm}
+          disabled={!ready || submitting}
+          className="flex h-12 shrink-0 items-center justify-center gap-2 rounded-xl bg-emerald-600 px-5 font-semibold text-white disabled:opacity-50"
+        >
+          {submitting && <Loader2 className="size-5 animate-spin" />}
+          {onTab ? "Lançar na comanda" : "Confirmar pedido"}
+        </button>
+      </ActionBar>
+    </PanelPage>
   );
 }

@@ -2,6 +2,7 @@
 
 import { Loader2 } from "lucide-react";
 
+import { PanelPage } from "./panel-page";
 import { PrintSettings } from "./print-settings";
 import { StoreSections } from "./store-sections";
 import { usePanelTenant } from "./use-panel";
@@ -10,7 +11,7 @@ import { usePanelTenant } from "./use-panel";
 export function PrintSettingsView() {
   const tenant = usePanelTenant();
   return (
-    <main className="mx-auto max-w-3xl space-y-4 px-4 pb-16 pt-4">
+    <PanelPage width="read" className="space-y-4">
       <StoreSections />
       {tenant.data ? (
         <PrintSettings tenant={tenant.data} />
@@ -19,6 +20,6 @@ export function PrintSettingsView() {
           <Loader2 className="size-6 animate-spin" />
         </div>
       )}
-    </main>
+    </PanelPage>
   );
 }

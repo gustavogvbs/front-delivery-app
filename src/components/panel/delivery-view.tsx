@@ -13,6 +13,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { Loader2, Plus, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 
+import { PanelPage } from "./panel-page";
 import { Card, Field, inputClass } from "./settings-view";
 import { panelKeys, usePanelTenant } from "./use-panel";
 
@@ -32,7 +33,7 @@ export function DeliveryView() {
   const t = tenant.data;
   const maxKm = t.deliveryFeeTiers.at(-1)?.maxMeters;
   return (
-    <main className="mx-auto max-w-3xl space-y-4 px-4 pb-16 pt-4">
+    <PanelPage width="read" className="space-y-4">
       <p
         className={`rounded-2xl p-4 text-sm ${
           t.acceptsDelivery
@@ -53,7 +54,7 @@ export function DeliveryView() {
       </p>
       <AddressForm tenant={t} />
       <TiersForm key={JSON.stringify(t.deliveryFeeTiers)} tenant={t} />
-    </main>
+    </PanelPage>
   );
 }
 

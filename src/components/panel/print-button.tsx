@@ -7,10 +7,60 @@ import { copiesFor, printOrder, printUrl, type PrintCopy } from "@/lib/print";
 import { readText, writeText } from "@/lib/storage";
 import type { PanelTenant } from "@/types/panel";
 import { Printer } from "lucide-react";
+import { toast } from "sonner";
 
 const printedKey = (id: string) => `printed:${id}`;
 export const markPrinted = (id: string) =>
   writeText("session", printedKey(id), "1");
+
+/**
+ * "Já impresso" deste pedido (nesta sessão do navegador): a mesma marca vale
+ * para o botão do detalhe do pedido e a impressão rápida da comanda.
+ */
+export function usePrintedMark(orderId: string) {
+  const [printed, setPrinted] = useState(false);
+  // lido depois de montar (o servidor não tem sessionStorage)
+  useEffect(() => {
+    setPrinted(readText("session", printedKey(orderId)) === "1");
+  }, [orderId]);
+  const mark = () => {
+    markPrinted(orderId);
+    setPrinted(true);
+  };
+  return { printed, mark };
+}
+
+/**
+ * Impressão rápida (detalhe da comanda): SEMPRE a via da cozinha, sem
+ * perguntar, na largura configurada da loja.
+ */
+export function QuickKitchenPrint({
+  orderId,
+  number,
+}: {
+  orderId: string;
+  number: number;
+}) {
+  const { printed, mark } = usePrintedMark(orderId);
+  return (
+    <button
+      type="button"
+      onClick={() => {
+        printOrder(orderId, "cozinha");
+        mark();
+        toast.success(`Enviado para impressão · #${number}`, {
+          description: "Via da cozinha",
+        });
+      }}
+      aria-label={`${printed ? "Reimprimir" : "Imprimir"} via da cozinha do pedido #${number}`}
+      className="flex h-11 shrink-0 items-center gap-1.5 rounded-xl border border-zinc-300 bg-white px-3 text-sm font-semibold text-zinc-800 active:bg-zinc-100"
+      data-testid="quick-print"
+    >
+      <Printer className="size-4" />
+      {printed ? "Reimprimir" : "Imprimir"}
+    </button>
+  );
+}
 
 const OPTIONS: { copy: PrintCopy; label: string }[] = [
   { copy: "cozinha", label: "Via da cozinha (sem preços)" },
@@ -27,17 +77,12 @@ export function PrintButton({
   tenant: PanelTenant;
 }) {
   const [open, setOpen] = useState(false);
-  const [printed, setPrinted] = useState(false);
-  // lido depois de montar (o servidor não tem sessionStorage)
-  useEffect(() => {
-    setPrinted(readText("session", printedKey(orderId)) === "1");
-  }, [orderId]);
+  const { printed, mark } = usePrintedMark(orderId);
   const standard = copiesFor(tenant);
 
   const print = (copy: PrintCopy) => {
     printOrder(orderId, copy);
-    markPrinted(orderId);
-    setPrinted(true);
+    mark();
     setOpen(false);
   };
 

@@ -15,8 +15,9 @@ import {
 } from "@/lib/panel-format";
 import type { OrderType, PanelOrderSummary } from "@/types/panel";
 import { useIsFetching } from "@tanstack/react-query";
-import { ChevronRight, Loader2, Plus, RefreshCw } from "lucide-react";
+import { ChevronRight, Loader2, RefreshCw } from "lucide-react";
 
+import { PanelPage } from "./panel-page";
 import {
   panelKeys,
   POLL_MS,
@@ -51,17 +52,10 @@ export function OrdersBoard() {
   const current = tab === "andamento" ? active : finished;
 
   return (
-    <main className="mx-auto max-w-3xl px-4 pb-16 pt-4">
-      <Link
-        href="/painel/pedidos/novo"
-        className="mb-3 flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-zinc-900 font-semibold text-white"
-      >
-        <Plus className="size-5" />
-        Novo pedido (mesa, retirada, telefone)
-      </Link>
+    <PanelPage width="wide">
       <div
         role="tablist"
-        className="grid grid-cols-2 gap-1 rounded-xl bg-zinc-200/70 p-1"
+        className="grid grid-cols-2 gap-1 rounded-xl bg-zinc-200/70 p-1 md:max-w-md"
       >
         {(
           [
@@ -146,41 +140,53 @@ export function OrdersBoard() {
         pending.length + accepted.length === 0 ? (
           <Empty text="Nenhum pedido em andamento. Pedidos novos aparecem aqui sozinhos." />
         ) : (
-          <>
+          <div className="xl:grid xl:grid-cols-2 xl:items-start xl:gap-6">
             {pending.length > 0 && (
-              <Section title={`Aguardando aceite (${pending.length})`}>
+              <Section
+                title={`Aguardando aceite (${pending.length})`}
+                columns="active"
+              >
                 {pending.map((o) => (
                   <OrderCard key={o.id} order={o} highlight />
                 ))}
               </Section>
             )}
             {accepted.length > 0 && (
-              <Section title={`Aceitos (${accepted.length})`}>
+              <Section title={`Aceitos (${accepted.length})`} columns="active">
                 {accepted.map((o) => (
                   <OrderCard key={o.id} order={o} />
                 ))}
               </Section>
             )}
-          </>
+          </div>
         )
       ) : finishedList.length === 0 ? (
         <Empty text="Nenhum pedido finalizado ainda." />
       ) : (
-        <Section title="Últimos 50">
+        <Section title="Últimos 50" columns="finished">
           {finishedList.map((o) => (
             <OrderCard key={o.id} order={o} />
           ))}
         </Section>
       )}
-    </main>
+    </PanelPage>
   );
 }
 
+/** Colunas: em andamento = 2 no tablet, 1 por seção no desktop largo (as seções
+ * ficam lado a lado); finalizados = até 3. */
+const SECTION_COLUMNS = {
+  active: "md:grid-cols-2 xl:grid-cols-1",
+  finished: "md:grid-cols-2 2xl:grid-cols-3",
+} as const;
+
 function Section({
   title,
+  columns,
   children,
 }: {
   title: string;
+  columns: keyof typeof SECTION_COLUMNS;
   children: React.ReactNode;
 }) {
   return (
@@ -188,7 +194,7 @@ function Section({
       <h2 className="mb-2 text-sm font-semibold uppercase tracking-wide text-zinc-500">
         {title}
       </h2>
-      <ul className="space-y-2">{children}</ul>
+      <ul className={`grid gap-2 ${SECTION_COLUMNS[columns]}`}>{children}</ul>
     </section>
   );
 }

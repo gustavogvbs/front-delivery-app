@@ -33,6 +33,7 @@ import {
 } from "lucide-react";
 import { toast } from "sonner";
 
+import { PanelPage } from "./panel-page";
 import { Field, inputClass } from "./settings-view";
 import { panelKeys, useCatalog } from "./use-panel";
 
@@ -73,7 +74,7 @@ export function CatalogView() {
   const categories = catalog.data;
 
   return (
-    <main className="mx-auto max-w-3xl space-y-4 px-4 pb-16 pt-4">
+    <PanelPage width="wide" className="space-y-4">
       <div className="flex items-center justify-between gap-2">
         <p className="text-sm text-zinc-600">
           {categories.length === 0
@@ -114,7 +115,7 @@ export function CatalogView() {
               Nenhum produto. Categorias vazias não aparecem no cardápio.
             </p>
           ) : (
-            <ul className="divide-y divide-zinc-100">
+            <ul className="divide-y divide-zinc-100 lg:grid lg:grid-cols-2 lg:gap-px lg:divide-y-0 lg:bg-zinc-100 2xl:grid-cols-3">
               {c.products.map((p) => (
                 <ProductRow
                   key={p.id}
@@ -175,7 +176,7 @@ export function CatalogView() {
           </SheetContent>
         )}
       </Sheet>
-    </main>
+    </PanelPage>
   );
 }
 
@@ -214,7 +215,10 @@ function ProductRow({
   });
 
   return (
-    <li className="flex items-center gap-3 px-4 py-2" data-testid="product-row">
+    <li
+      className="flex items-center gap-3 bg-white px-4 py-2"
+      data-testid="product-row"
+    >
       <button
         type="button"
         onClick={onEdit}

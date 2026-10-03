@@ -14,6 +14,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { Clock, Loader2, Plus } from "lucide-react";
 import { toast } from "sonner";
 
+import { PanelPage } from "./panel-page";
 import {
   panelKeys,
   useOpenTabs,
@@ -39,39 +40,41 @@ export function TabsView() {
   }, []);
 
   return (
-    <main className="mx-auto max-w-3xl px-4 pb-16 pt-4">
-      <button
-        type="button"
-        onClick={() => setOpening(true)}
-        className="mb-3 flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-zinc-900 font-semibold text-white"
-      >
-        <Plus className="size-5" />
-        Abrir comanda
-      </button>
-      <div
-        role="tablist"
-        className="grid grid-cols-2 gap-1 rounded-xl bg-zinc-200/70 p-1"
-      >
-        {(
-          [
-            ["abertas", `Abertas (${open.data?.length ?? 0})`],
-            ["historico", "Histórico"],
-          ] as const
-        ).map(([key, label]) => (
-          <button
-            key={key}
-            role="tab"
-            aria-selected={view === key}
-            onClick={() => setView(key)}
-            className={`h-11 rounded-lg text-sm font-semibold ${
-              view === key
-                ? "bg-white text-zinc-900 shadow-sm"
-                : "text-zinc-600"
-            }`}
-          >
-            {label}
-          </button>
-        ))}
+    <PanelPage width="wide">
+      <div className="flex flex-col gap-3 md:flex-row-reverse md:items-center md:justify-between">
+        <button
+          type="button"
+          onClick={() => setOpening(true)}
+          className="flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-zinc-900 font-semibold text-white md:w-auto md:px-5"
+        >
+          <Plus className="size-5" />
+          Abrir comanda
+        </button>
+        <div
+          role="tablist"
+          className="grid grid-cols-2 gap-1 rounded-xl bg-zinc-200/70 p-1 md:w-full md:max-w-md"
+        >
+          {(
+            [
+              ["abertas", `Abertas (${open.data?.length ?? 0})`],
+              ["historico", "Histórico"],
+            ] as const
+          ).map(([key, label]) => (
+            <button
+              key={key}
+              role="tab"
+              aria-selected={view === key}
+              onClick={() => setView(key)}
+              className={`h-11 rounded-lg text-sm font-semibold ${
+                view === key
+                  ? "bg-white text-zinc-900 shadow-sm"
+                  : "text-zinc-600"
+              }`}
+            >
+              {label}
+            </button>
+          ))}
+        </div>
       </div>
 
       {view === "abertas" ? (
@@ -86,7 +89,7 @@ export function TabsView() {
       )}
 
       <OpenTabSheet open={opening} onOpenChange={setOpening} />
-    </main>
+    </PanelPage>
   );
 }
 
@@ -121,7 +124,10 @@ function OpenTabs({
       </p>
     );
   return (
-    <ul className="mt-3 grid gap-2 sm:grid-cols-2" data-testid="open-tabs">
+    <ul
+      className="mt-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4"
+      data-testid="open-tabs"
+    >
       {tabs.map((t) => {
         const long = now - new Date(t.openedAt).getTime() > LONG_OPEN_MS;
         return (
@@ -170,8 +176,11 @@ function History() {
     "mt-1 h-12 w-full rounded-xl border border-zinc-300 bg-white px-3 text-base";
 
   return (
-    <section className="mt-3 space-y-3" aria-label="Histórico de comandas">
-      <div className="grid grid-cols-2 gap-2">
+    <section
+      className="mt-4 max-w-4xl space-y-3"
+      aria-label="Histórico de comandas"
+    >
+      <div className="grid grid-cols-2 gap-2 md:max-w-md">
         <label className="block">
           <span className="text-sm font-medium text-zinc-700">De</span>
           <input
