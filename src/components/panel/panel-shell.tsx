@@ -25,6 +25,11 @@ const SECTIONS = [
     match: (p: string) => p === "/painel" || p.startsWith("/painel/pedidos"),
   },
   {
+    href: "/painel/mesas",
+    label: "Mesas",
+    match: (p: string) => p.startsWith("/painel/mesas"),
+  },
+  {
     href: "/painel/cardapio",
     label: "Cardápio",
     match: (p: string) => p.startsWith("/painel/cardapio"),
@@ -33,11 +38,6 @@ const SECTIONS = [
     href: "/painel/entrega",
     label: "Entrega",
     match: (p: string) => p.startsWith("/painel/entrega"),
-  },
-  {
-    href: "/painel/horarios",
-    label: "Horários",
-    match: (p: string) => p.startsWith("/painel/horarios"),
   },
   {
     href: "/painel/loja",
