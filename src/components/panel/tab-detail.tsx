@@ -25,6 +25,8 @@ import { useQueryClient } from "@tanstack/react-query";
 import { ArrowLeft, Loader2, Plus, Printer } from "lucide-react";
 import { toast } from "sonner";
 
+import { ActionBar, PanelPage } from "./panel-page";
+import { QuickKitchenPrint } from "./print-button";
 import { panelKeys, useTab } from "./use-panel";
 
 const TAB_STATUS: Record<TabStatus, { label: string; className: string }> = {
@@ -74,8 +76,37 @@ export function TabDetail({ id }: { id: string }) {
   // valores SEMPRE do back: prévia (aberta) ou snapshot (fechada)
   const c = tab.closing;
 
+  const actions = (
+    <>
+      <Link
+        href={`/painel/pedidos/novo?comanda=${tab.id}`}
+        className="col-span-2 flex h-12 items-center justify-center gap-2 rounded-xl bg-zinc-900 font-semibold text-white"
+      >
+        <Plus className="size-5" />
+        Adicionar pedido
+      </Link>
+      <button
+        type="button"
+        onClick={() => setClosing(true)}
+        className="flex h-12 items-center justify-center rounded-xl bg-emerald-600 font-semibold text-white"
+      >
+        Fechar conta
+      </button>
+      <button
+        type="button"
+        onClick={() => setCanceling(true)}
+        className="flex h-12 items-center justify-center rounded-xl border border-red-300 font-semibold text-red-700"
+      >
+        Cancelar comanda
+      </button>
+    </>
+  );
+
   return (
-    <main className="mx-auto max-w-3xl space-y-3 px-4 pb-44 pt-3">
+    <PanelPage
+      width="detail"
+      className={`space-y-3 ${isOpen ? "pb-44 lg:pb-16" : ""}`}
+    >
       <div className="flex flex-wrap items-center gap-2">
         <Link
           href="/painel/mesas"
@@ -102,151 +133,161 @@ export function TabDetail({ id }: { id: string }) {
           ` · cancelada ${dateTimeShort(tab.canceledAt)}${tab.canceledBy ? ` por ${tab.canceledBy}` : ""}`}
       </p>
 
-      {tab.status === "CANCELADA" && tab.cancelReason && (
-        <section className="rounded-2xl bg-white p-4 shadow-sm">
-          <h2 className="mb-1 text-sm font-semibold uppercase tracking-wide text-zinc-500">
-            Motivo do cancelamento
-          </h2>
-          <p className="text-zinc-700">{tab.cancelReason}</p>
-        </section>
-      )}
+      {/* desktop: pedidos à esquerda; conta e ações à direita (fixas ao rolar) */}
+      <div className="space-y-3 lg:grid lg:grid-cols-[minmax(0,1fr)_minmax(0,22rem)] lg:items-start lg:gap-4 lg:space-y-0">
+        <div className="space-y-3">
+          {tab.status === "CANCELADA" && tab.cancelReason && (
+            <section className="rounded-2xl bg-white p-4 shadow-sm">
+              <h2 className="mb-1 text-sm font-semibold uppercase tracking-wide text-zinc-500">
+                Motivo do cancelamento
+              </h2>
+              <p className="text-zinc-700">{tab.cancelReason}</p>
+            </section>
+          )}
 
-      <section className="rounded-2xl bg-white p-4 shadow-sm">
-        <h2 className="mb-2 text-sm font-semibold uppercase tracking-wide text-zinc-500">
-          Pedidos ({tab.orders.length})
-        </h2>
-        {tab.orders.length === 0 ? (
-          <p className="text-sm text-zinc-500">Nenhum pedido lançado ainda.</p>
-        ) : (
-          <ul className="divide-y divide-zinc-100" data-testid="tab-orders">
-            {tab.orders.map((o) => (
-              <li
-                key={o.id}
-                className={`py-3 ${o.countsInTotal ? "" : "opacity-60"}`}
-              >
-                <Link
-                  href={`/painel/pedidos/${o.id}`}
-                  className="flex min-h-11 items-center justify-between gap-2"
-                >
-                  <span className="font-semibold text-zinc-900">
-                    #{o.number} · {timeHM(o.createdAt)}
-                  </span>
-                  <span
-                    className={`rounded-full px-2 py-0.5 text-xs font-semibold ${STATUS_CLASS[o.status]}`}
-                  >
-                    {STATUS_LABEL[o.status]}
-                  </span>
-                </Link>
-                <ul
-                  className={`mt-1 space-y-1 ${o.countsInTotal ? "" : "line-through"}`}
-                >
-                  {o.items.map((i) => (
-                    <li key={i.id}>
-                      <OrderItemLine item={i} />
-                    </li>
-                  ))}
-                </ul>
-                {o.notes && (
-                  <p className="mt-1 text-sm text-amber-800">Obs.: {o.notes}</p>
-                )}
-                <p className="mt-1 text-right text-sm text-zinc-600">
-                  {o.countsInTotal
-                    ? `Pedido: ${formatBRL(o.totalCents)}`
-                    : "Fora da conta"}
-                </p>
-              </li>
-            ))}
-          </ul>
-        )}
-      </section>
-
-      <section
-        className="rounded-2xl bg-white p-4 shadow-sm"
-        data-testid="tab-totals"
-      >
-        <h2 className="mb-2 text-sm font-semibold uppercase tracking-wide text-zinc-500">
-          {c ? "Conta fechada" : isOpen ? "Total parcial" : "Total"}
-        </h2>
-        <dl className="space-y-1 text-sm text-zinc-700">
-          <Row
-            label="Subtotal"
-            value={formatBRL(c ? c.subtotalCents : tab.preview.subtotalCents)}
-          />
-          {c ? (
-            c.serviceFeeCents > 0 ? (
-              <Row
-                label={`Taxa de serviço (${bpsText(c.serviceFeeBps)})`}
-                value={formatBRL(c.serviceFeeCents)}
-              />
+          <section className="rounded-2xl bg-white p-4 shadow-sm">
+            <h2 className="mb-2 text-sm font-semibold uppercase tracking-wide text-zinc-500">
+              Pedidos ({tab.orders.length})
+            </h2>
+            {tab.orders.length === 0 ? (
+              <p className="text-sm text-zinc-500">
+                Nenhum pedido lançado ainda.
+              </p>
             ) : (
-              tab.serviceFee.enabled && (
-                <Row label="Taxa de serviço" value="retirada" />
-              )
-            )
-          ) : (
-            tab.serviceFee.enabled && (
-              <Row
-                label={tab.serviceFee.label}
-                value={formatBRL(tab.preview.serviceFeeCents)}
-              />
-            )
-          )}
-          <div className="flex justify-between text-base font-bold text-zinc-900">
-            <dt>Total</dt>
-            <dd className="tabular-nums" data-testid="tab-total">
-              {formatBRL(c ? c.totalCents : tab.preview.totalCents)}
-            </dd>
-          </div>
-          {c && (
-            <Row
-              label="Pagamento"
-              value={`${PAYMENT_LABEL[c.paymentMethod]}${
-                c.changeForCents
-                  ? ` · troco para ${formatBRL(c.changeForCents)} (devolver ${formatBRL(c.changeForCents - c.totalCents)})`
-                  : ""
-              }`}
-            />
-          )}
-        </dl>
-      </section>
+              <ul className="divide-y divide-zinc-100" data-testid="tab-orders">
+                {tab.orders.map((o) => (
+                  <li key={o.id} className="py-3" data-testid="tab-order">
+                    {/* o link (abre o pedido) e a impressão são alvos separados */}
+                    <div className="flex items-center gap-3">
+                      <Link
+                        href={`/painel/pedidos/${o.id}`}
+                        className={`-mx-2 flex min-h-11 min-w-0 flex-1 items-center justify-between gap-2 rounded-xl px-2 hover:bg-zinc-50 ${
+                          o.countsInTotal ? "" : "opacity-60"
+                        }`}
+                      >
+                        <span className="font-semibold text-zinc-900">
+                          #{o.number} · {timeHM(o.createdAt)}
+                        </span>
+                        <span
+                          className={`rounded-full px-2 py-0.5 text-xs font-semibold ${STATUS_CLASS[o.status]}`}
+                        >
+                          {STATUS_LABEL[o.status]}
+                        </span>
+                      </Link>
+                      {o.countsInTotal && (
+                        <QuickKitchenPrint orderId={o.id} number={o.number} />
+                      )}
+                    </div>
+                    <div className={o.countsInTotal ? "" : "opacity-60"}>
+                      <ul
+                        className={`mt-1 space-y-1 ${o.countsInTotal ? "" : "line-through"}`}
+                      >
+                        {o.items.map((i) => (
+                          <li key={i.id}>
+                            <OrderItemLine item={i} />
+                          </li>
+                        ))}
+                      </ul>
+                      {o.notes && (
+                        <p className="mt-1 text-sm text-amber-800">
+                          Obs.: {o.notes}
+                        </p>
+                      )}
+                      <p className="mt-1 text-right text-sm text-zinc-600">
+                        {o.countsInTotal
+                          ? `Pedido: ${formatBRL(o.totalCents)}`
+                          : "Fora da conta"}
+                      </p>
+                    </div>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </section>
+        </div>
 
-      {tab.status !== "CANCELADA" && tab.orders.length > 0 && (
-        <button
-          type="button"
-          onClick={() => printPreBill(tab.id)}
-          className="flex h-12 w-full items-center justify-center gap-2 rounded-xl border border-zinc-300 bg-white font-semibold text-zinc-800"
-        >
-          <Printer className="size-5" />
-          Imprimir pré-conta
-        </button>
-      )}
+        <div className="space-y-3 lg:sticky lg:top-24">
+          <section
+            className="rounded-2xl bg-white p-4 shadow-sm"
+            data-testid="tab-totals"
+          >
+            <h2 className="mb-2 text-sm font-semibold uppercase tracking-wide text-zinc-500">
+              {c ? "Conta fechada" : isOpen ? "Total parcial" : "Total"}
+            </h2>
+            <dl className="space-y-1 text-sm text-zinc-700">
+              <Row
+                label="Subtotal"
+                value={formatBRL(
+                  c ? c.subtotalCents : tab.preview.subtotalCents,
+                )}
+              />
+              {c ? (
+                c.serviceFeeCents > 0 ? (
+                  <Row
+                    label={`Taxa de serviço (${bpsText(c.serviceFeeBps)})`}
+                    value={formatBRL(c.serviceFeeCents)}
+                  />
+                ) : (
+                  tab.serviceFee.enabled && (
+                    <Row label="Taxa de serviço" value="retirada" />
+                  )
+                )
+              ) : (
+                tab.serviceFee.enabled && (
+                  <Row
+                    label={tab.serviceFee.label}
+                    value={formatBRL(tab.preview.serviceFeeCents)}
+                  />
+                )
+              )}
+              <div className="flex justify-between text-base font-bold text-zinc-900">
+                <dt>Total</dt>
+                <dd className="tabular-nums" data-testid="tab-total">
+                  {formatBRL(c ? c.totalCents : tab.preview.totalCents)}
+                </dd>
+              </div>
+              {c && (
+                <Row
+                  label="Pagamento"
+                  value={`${PAYMENT_LABEL[c.paymentMethod]}${
+                    c.changeForCents
+                      ? ` · troco para ${formatBRL(c.changeForCents)} (devolver ${formatBRL(c.changeForCents - c.totalCents)})`
+                      : ""
+                  }`}
+                />
+              )}
+            </dl>
+          </section>
+
+          {tab.status !== "CANCELADA" && tab.orders.length > 0 && (
+            <button
+              type="button"
+              onClick={() => printPreBill(tab.id)}
+              className="flex h-12 w-full items-center justify-center gap-2 rounded-xl border border-zinc-300 bg-white font-semibold text-zinc-800"
+            >
+              <Printer className="size-5" />
+              Imprimir pré-conta
+            </button>
+          )}
+
+          {isOpen && (
+            <section
+              className="hidden flex-col gap-2 rounded-2xl bg-white p-4 shadow-sm lg:flex"
+              aria-label="Ações da comanda"
+            >
+              {actions}
+            </section>
+          )}
+        </div>
+      </div>
 
       {isOpen && (
-        <div className="fixed inset-x-0 bottom-0 z-30 border-t bg-white px-4 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-3">
-          <div className="mx-auto grid max-w-3xl grid-cols-2 gap-2">
-            <Link
-              href={`/painel/pedidos/novo?comanda=${tab.id}`}
-              className="col-span-2 flex h-12 items-center justify-center gap-2 rounded-xl bg-zinc-900 font-semibold text-white"
-            >
-              <Plus className="size-5" />
-              Adicionar pedido
-            </Link>
-            <button
-              type="button"
-              onClick={() => setClosing(true)}
-              className="flex h-12 items-center justify-center rounded-xl bg-emerald-600 font-semibold text-white"
-            >
-              Fechar conta
-            </button>
-            <button
-              type="button"
-              onClick={() => setCanceling(true)}
-              className="flex h-12 items-center justify-center rounded-xl border border-red-300 font-semibold text-red-700"
-            >
-              Cancelar comanda
-            </button>
-          </div>
-        </div>
+        <ActionBar
+          className="lg:hidden"
+          innerClassName="grid grid-cols-2 gap-2"
+        >
+          {actions}
+        </ActionBar>
       )}
 
       {isOpen && (
@@ -265,7 +306,7 @@ export function TabDetail({ id }: { id: string }) {
           />
         </>
       )}
-    </main>
+    </PanelPage>
   );
 }
 
