@@ -21,9 +21,10 @@ import { toast } from "sonner";
 
 import { OpenControl } from "./open-control";
 import { Card } from "./settings-view";
+import { StoreSections } from "./store-sections";
 import { panelKeys, usePanelTenant } from "./use-panel";
 
-/** Tela "Horários": modo, fuso e intervalos por dia da semana. */
+/** Loja → Horários: modo, fuso e intervalos por dia da semana. */
 export function HoursView() {
   const tenant = usePanelTenant();
   if (!tenant.data) {
@@ -35,6 +36,7 @@ export function HoursView() {
   }
   return (
     <main className="mx-auto max-w-3xl space-y-4 px-4 pb-16 pt-4">
+      <StoreSections />
       <OpenControl tenant={tenant.data} variant="card" />
       {/* key: o formulário recomeça do que está salvo depois de salvar */}
       <HoursForm

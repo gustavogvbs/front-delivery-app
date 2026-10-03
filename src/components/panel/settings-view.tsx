@@ -22,10 +22,11 @@ import { ExternalLink, Eye, EyeOff, ImageUp, Loader2 } from "lucide-react";
 import { toast } from "sonner";
 
 import { OpenControl } from "./open-control";
-import { PrintSettings } from "./print-settings";
+import { ServiceFeeSettings } from "./service-fee-settings";
+import { StoreSections } from "./store-sections";
 import { panelKeys, usePanelTenant } from "./use-panel";
 
-/** Tela "Loja": aberto/fechado, logo, dados e senha. */
+/** Loja → Dados: aberto/fechado, logo, dados, taxa de serviço e senha. */
 export function SettingsView() {
   const tenant = usePanelTenant();
   if (!tenant.data) {
@@ -37,6 +38,7 @@ export function SettingsView() {
   }
   return (
     <main className="mx-auto max-w-3xl space-y-4 px-4 pb-16 pt-4">
+      <StoreSections />
       <OpenCard tenant={tenant.data} />
       <LogoCard tenant={tenant.data} />
       {/* key: reinicia o formulário quando os dados salvos mudam por outra tela */}
@@ -44,7 +46,7 @@ export function SettingsView() {
         key={tenant.data.name + tenant.data.whatsapp}
         tenant={tenant.data}
       />
-      <PrintSettings tenant={tenant.data} />
+      <ServiceFeeSettings tenant={tenant.data} />
       <PasswordForm />
     </main>
   );

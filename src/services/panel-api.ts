@@ -15,6 +15,9 @@ import type {
   ProductInput,
   Session,
   SettingsPatch,
+  CloseTabBody,
+  TabDetail,
+  TabSummary,
 } from "@/types/panel";
 
 // O interceptor devolve response.data; as rotas respondem { data }.
@@ -283,5 +286,56 @@ export async function createManualOrder(
   const res = (await panelApi.post("/tenant/me/orders", body, {
     headers: { "Idempotency-Key": idempotencyKey },
   })) as Envelope<PanelOrder>;
+  return res.data;
+}
+
+// ── comandas (mesas) ──
+
+/** Abertas (padrão) ou histórico: status "FECHADA,CANCELADA" e datas AAAA-MM-DD. */
+export async function listTabs(
+  params: { status?: string; from?: string; to?: string } = {},
+): Promise<TabSummary[]> {
+  const res = (await panelApi.get("/tenant/me/tabs", {
+    params,
+  })) as Envelope<TabSummary[]>;
+  return res.data;
+}
+
+export async function openTab(label: string): Promise<TabDetail> {
+  const res = (await panelApi.post("/tenant/me/tabs", {
+    label,
+  })) as Envelope<TabDetail>;
+  return res.data;
+}
+
+export async function getTab(id: string): Promise<TabDetail> {
+  const res = (await panelApi.get(
+    `/tenant/me/tabs/${encodeURIComponent(id)}`,
+  )) as Envelope<TabDetail>;
+  return res.data;
+}
+
+/** Fecha a conta. Mesma Idempotency-Key = mesmo fechamento (clique duplo). */
+export async function closeTab(
+  id: string,
+  body: CloseTabBody,
+  idempotencyKey: string,
+): Promise<TabDetail> {
+  const res = (await panelApi.post(
+    `/tenant/me/tabs/${encodeURIComponent(id)}/close`,
+    body,
+    { headers: { "Idempotency-Key": idempotencyKey } },
+  )) as Envelope<TabDetail>;
+  return res.data;
+}
+
+export async function cancelTab(
+  id: string,
+  reason: string,
+): Promise<TabDetail> {
+  const res = (await panelApi.post(
+    `/tenant/me/tabs/${encodeURIComponent(id)}/cancel`,
+    { reason },
+  )) as Envelope<TabDetail>;
   return res.data;
 }

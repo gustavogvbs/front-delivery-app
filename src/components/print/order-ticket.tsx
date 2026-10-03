@@ -1,7 +1,7 @@
 import { OrderItemLine } from "@/components/orders/order-item-line";
 import { formatBRL, maskCep } from "@/lib/format";
 import { orderTypeLongLabel } from "@/lib/order-lines";
-import { dateTimeShort, PAYMENT_LABEL, phoneText } from "@/lib/panel-format";
+import { dateTimeShort, paymentText, phoneText } from "@/lib/panel-format";
 import type { PrintCopy } from "@/lib/print";
 import type { PanelOrder } from "@/types/panel";
 
@@ -32,6 +32,7 @@ export function ticketCss(width: 58 | 80) {
   .print-price { white-space: nowrap; font-weight: 400; font-size: ${base}px; }
   .t-notes { border: 2px solid #000; padding: 1mm; font-weight: 900; text-transform: uppercase; font-size: ${base * 1.05}px; overflow-wrap: anywhere; }
   .t-row { display: flex; justify-content: space-between; gap: 2mm; }
+  .t-row > span:last-child { white-space: nowrap; }
   .t-total { font-size: ${base * 1.35}px; font-weight: 900; }
   .t-cut { text-align: center; margin: 4mm 0; font-size: ${base * 0.85}px; letter-spacing: 2px; }
   .t-wrap { overflow-wrap: anywhere; }
@@ -131,7 +132,11 @@ function DeliveryExtra({ order }: { order: PanelOrder }) {
       </div>
       <div className="t-section">
         <div className="t-label">Pagamento</div>
-        <div>{PAYMENT_LABEL[order.paymentMethod]}</div>
+        <div>
+          {order.tab
+            ? `Na comanda ${order.tab.label} (no fechamento)`
+            : paymentText(order.paymentMethod)}
+        </div>
         {order.changeForCents ? (
           <div>
             Troco para {formatBRL(order.changeForCents)}

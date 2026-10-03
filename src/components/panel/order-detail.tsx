@@ -11,7 +11,7 @@ import { orderTypeLabel, orderTypeLongLabel } from "@/lib/order-lines";
 import {
   dateTimeShort,
   EVENT_LABEL,
-  PAYMENT_LABEL,
+  paymentText,
   phoneText,
   STATUS_CLASS,
   STATUS_LABEL,
@@ -74,6 +74,7 @@ export function OrderDetail({ id }: { id: string }) {
   const applyOrder = (data: PanelOrder) => {
     qc.setQueryData(panelKeys.order(id), data);
     void qc.invalidateQueries({ queryKey: panelKeys.orders });
+    if (data.tab) void qc.invalidateQueries({ queryKey: panelKeys.tabs });
   };
 
   const mutation = useMutation({
@@ -150,6 +151,8 @@ export function OrderDetail({ id }: { id: string }) {
         ? order.cancellationReason
         : null;
   const confirmCfg = confirm ? CONFIRM[confirm] : undefined;
+  // pedido de comanda: o motivo fica registrado (o valor sai da conta)
+  const reasonRequired = order.tab !== null;
   const closeConfirm = () => {
     if (mutation.isPending) return;
     setConfirm(null);
@@ -160,9 +163,9 @@ export function OrderDetail({ id }: { id: string }) {
     <main className="mx-auto max-w-3xl space-y-3 px-4 pb-44 pt-3">
       <div className="flex flex-wrap items-center gap-2">
         <Link
-          href="/painel"
+          href={order.tab ? `/painel/mesas/${order.tab.id}` : "/painel"}
           className="-ml-2 flex size-11 items-center justify-center rounded-full text-zinc-700 hover:bg-zinc-100"
-          aria-label="Voltar aos pedidos"
+          aria-label={order.tab ? "Voltar à comanda" : "Voltar aos pedidos"}
         >
           <ArrowLeft className="size-5" />
         </Link>
@@ -185,6 +188,15 @@ export function OrderDetail({ id }: { id: string }) {
           <span className="rounded-full border border-zinc-300 px-2.5 py-0.5 text-sm text-zinc-600">
             Manual
           </span>
+        )}
+        {order.tab && (
+          <Link
+            href={`/painel/mesas/${order.tab.id}`}
+            className="flex h-11 items-center rounded-full border border-zinc-900 px-3 text-sm font-semibold text-zinc-900"
+            data-testid="order-tab-link"
+          >
+            Comanda {order.tab.label}
+          </Link>
         )}
       </div>
       <div className="flex flex-wrap items-center justify-between gap-2">
@@ -329,7 +341,7 @@ export function OrderDetail({ id }: { id: string }) {
           </div>
           <Row
             label="Pagamento"
-            value={`${PAYMENT_LABEL[order.paymentMethod]}${
+            value={`${order.tab ? "Na comanda (no fechamento)" : paymentText(order.paymentMethod)}${
               order.changeForCents
                 ? ` · troco para ${formatBRL(order.changeForCents)}`
                 : ""
@@ -414,7 +426,11 @@ export function OrderDetail({ id }: { id: string }) {
         {confirmCfg && confirm && (
           <SheetContent
             title={`${confirmCfg.title} #${order.number}?`}
-            description="O cliente não recebe aviso automático: depois, use “Avisar cliente no WhatsApp”."
+            description={
+              order.tab
+                ? `O pedido sai da conta da comanda ${order.tab.label}.`
+                : "O cliente não recebe aviso automático: depois, use “Avisar cliente no WhatsApp”."
+            }
           >
             <form
               className="space-y-3 p-4"
@@ -425,7 +441,9 @@ export function OrderDetail({ id }: { id: string }) {
             >
               <label className="block">
                 <span className="text-sm font-medium text-zinc-700">
-                  Motivo (opcional, vai na mensagem ao cliente)
+                  {reasonRequired
+                    ? "Motivo (obrigatório: o valor sai da comanda)"
+                    : "Motivo (opcional, vai na mensagem ao cliente)"}
                 </span>
                 <textarea
                   value={reason}
@@ -446,7 +464,7 @@ export function OrderDetail({ id }: { id: string }) {
                 </button>
                 <button
                   type="submit"
-                  disabled={disabled}
+                  disabled={disabled || (reasonRequired && !reason.trim())}
                   className="flex h-12 items-center justify-center gap-2 rounded-xl bg-red-600 font-semibold text-white disabled:opacity-60"
                 >
                   {pendingAction === confirm && (

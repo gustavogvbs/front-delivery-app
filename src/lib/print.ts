@@ -64,10 +64,22 @@ export const printUrl = (orderId: string, copy: PrintCopy, width?: 58 | 80) =>
  * carregam e avisa o pai para remover o iframe.
  */
 export function printOrder(orderId: string, copy: PrintCopy) {
+  printInFrame(printUrl(orderId, copy), "Impressão do pedido");
+}
+
+/** Pré-conta da comanda (NÃO é comprovante de pagamento), na bobina da loja. */
+export const preBillUrl = (tabId: string) =>
+  `/painel/mesas/${encodeURIComponent(tabId)}/imprimir?embed=1`;
+
+export function printPreBill(tabId: string) {
+  printInFrame(preBillUrl(tabId), "Impressão da pré-conta");
+}
+
+function printInFrame(src: string, title: string) {
   if (typeof document === "undefined") return;
   const frame = document.createElement("iframe");
   frame.setAttribute("aria-hidden", "true");
-  frame.title = "Impressão do pedido";
+  frame.title = title;
   Object.assign(frame.style, {
     position: "fixed",
     right: "0",
@@ -87,7 +99,7 @@ export function printOrder(orderId: string, copy: PrintCopy) {
   };
   window.addEventListener("message", onMessage);
   setTimeout(cleanup, 120_000); // garantia
-  frame.src = printUrl(orderId, copy);
+  frame.src = src;
   document.body.appendChild(frame);
 }
 
